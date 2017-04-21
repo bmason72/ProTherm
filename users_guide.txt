@@ -1,0 +1,28 @@
+
+Installation & Configuration
+
+Important files & directories
+
+needed to make by hand -> /usr/local/lib/protherm/
+
+/etc/protherm.cfg -> configuration file.
+/etc/protherm-tbot.cfg -> put your telegram bot ID & authorized user ID ('chat') *NUMBER* in this. 
+    keep it secret
+
+/var/log/protherm.log
+/var/log/protherm-tbot.log -> should changed _ to -
+
+/usr/local/lib/protherm/current_mode -> contains one integer {0,1,2..}
+
+/usr/local/lib/protherm/PROGRAM_NAME.txt -> list of thermostat
+   programes go here. PROGRAM_NAMEs must match the list of modes
+   hard-wired in the protherm code ("MODES = {0: ...")
+
+/etc/cron.d/... -> plotting cron files get put here
+
+/var/www -> nginx-served web content gets placed here
+
+/var/cache/protherm-tbot
+/var/run/protherm.pid
+/run/shm/protherm
+
