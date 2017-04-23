@@ -125,7 +125,7 @@ ENABLE_PASSWORD = "1234"
 # Other configuration.
 #-------------------------------------------------------------------------
 # Hysteresis times before changing switch state.
-SWITCH1_HYSTERESIS = 300   # Hysteresis in program mode
+SWITCH_HYSTERESIS = 300   # Hysteresis in program mode
 MANUAL_HYSTERESIS  = 20    # Hysteresis in manual (ON/OFF) mode
 BUTTON1_HYSTERESIS = 20    # Hysteresis after pressing button
 # Programmed temperature hysteresis for changing switch state.
@@ -137,7 +137,8 @@ MANUAL_MODES = [0, 1]
 MODE_MANUAL_OFF = 0
 MODE_DEFAULT = 2
 # bsm - add heat/cool/fan option
-CLIMATE_MODE = {0: "HEAT", 1: "COOL", 2: "FAN"}
+CLIMATE_MODES = {0: "HEAT", 1: "COOL", 2: "FAN"}
+CLIMATE_MODE_DEFAULT=0
 
 # Run as a daemon and logging options.
 BE_DAEMON = True
@@ -170,6 +171,7 @@ FONTS_DIR = "/usr/local/share/fonts"
 ICONS_DIR = "/usr/local/share/icons"
 DATA_DIR  = "/usr/local/lib/%s" % (PROG_NAME)
 CURR_MODE = "current_mode"
+CURR_CMODE = "current_climate_mode"
 
 # Where to read networking stats.
 IFACE_CARRIER = "/sys/class/net/%s/carrier"
@@ -198,7 +200,7 @@ DEFAULTS = {
     "DEFAULT_TEMPERATURE": str(DEFAULT_TEMPERATURE),
     "NTP_IS_MANDATORY":    str(NTP_IS_MANDATORY),
     "DEGREES_UNIT":        str(DEGREES_UNIT),
-    "SWITCH1_HYSTERESIS":  str(SWITCH1_HYSTERESIS),
+    "SWITCH_HYSTERESIS":  str(SWITCH_HYSTERESIS),
     "MANUAL_HYSTERESIS":   str(MANUAL_HYSTERESIS),
     "BUTTON1_HYSTERESIS":  str(BUTTON1_HYSTERESIS),
     "TEMP_HYSTERESIS":     str(TEMP_HYSTERESIS),
@@ -235,7 +237,7 @@ WIFI_QUALITY_SCALE  = config.getint(PROG_NAME, "WIFI_QUALITY_SCALE")
 DEFAULT_TEMPERATURE = config.getfloat(PROG_NAME, "DEFAULT_TEMPERATURE")
 NTP_IS_MANDATORY    = config.getboolean(PROG_NAME, "NTP_IS_MANDATORY")
 DEGREES_UNIT        = config.get(PROG_NAME, "DEGREES_UNIT")
-SWITCH1_HYSTERESIS  = config.getint(PROG_NAME, "SWITCH1_HYSTERESIS")
+SWITCH_HYSTERESIS  = config.getint(PROG_NAME, "SWITCH_HYSTERESIS")
 MANUAL_HYSTERESIS   = config.getint(PROG_NAME, "MANUAL_HYSTERESIS")
 BUTTON1_HYSTERESIS  = config.getint(PROG_NAME, "BUTTON1_HYSTERESIS")
 TEMP_HYSTERESIS     = config.getfloat(PROG_NAME, "TEMP_HYSTERESIS")
@@ -291,13 +293,16 @@ timer2_thread = None
 
 gauge1_value = None
 gauge1_required = None
+# bsm - 
+program_temp_required = None
+old_program_temp_required = None
+manual_temp_required = None
+old_manual_temp_required = None
 
-switch1_last_change = None
+switch_last_change = None
 switch1_state = None
 # bsm - new relays (fan/ac)-
-switch2_last_change = None
 switch2_state = None
-switch3_last_change = None
 switch3_state = None
 
 button1_last_press = None
@@ -349,6 +354,9 @@ def ntp_check_sync():
 #-------------------------------------------------------------------------
 # Handler for TCP request.
 #-------------------------------------------------------------------------
+# bsm - tbf - add HEAT , COOL , and FAN commands here and to TBOT if needed.
+#           - (later) - add temperature override here and TBOT
+#           - (later still) C vs F
 class socket_tcp_handler(SocketServer.StreamRequestHandler):
     # Allow very few time for client to send command.
     timeout = 5
@@ -377,6 +385,18 @@ class socket_tcp_handler(SocketServer.StreamRequestHandler):
                     mode_change(n)
                 else:
                     self.request.sendall(u"ERROR: Mode \"%s\" does not exists" % (requested_mode))
+            elif self.data.upper() == 'HEAT':
+                logging.info(msg)
+                self.request.sendall(u"OK: Setting climate mode to HEAT")
+                # set climate mode to heat here
+            elif self.data.upper() == 'COOL':
+                logging.info(msg)
+                self.request.sendall(u"OK: Setting climate mode to COOL")
+                # set climate mode to cool here
+            elif self.data.upper() == 'FAN':
+                logging.info(msg)
+                self.request.sendall(u"OK: Setting climate mode to FAN")
+                # set climate mode to fan here
             else:
                 logging.info(msg)
                 self.request.sendall(u'Error: command not recognized\n')
@@ -828,6 +848,32 @@ def mode_change(mode):
     display_mode()
 
 #-------------------------------------------------------------------------
+# bsm - Set new climate mode (index of CLIMATE_MODES dictionary).
+#-------------------------------------------------------------------------
+def climate_mode_change(mode):
+    global current_climate_mode
+
+    if (not mode in CLIMATE_MODES.keys()):
+        logging.error("Invalid climate mode %d requested" % (mode))
+        return
+
+    current_climate_mode = mode;
+    logging.info("Changing mode to '%s'" % (CLIMATE_MODES[current_climate_mode]))
+
+    # Write down current mode to file.
+    filename = os.path.join(DATA_DIR, CURR_CMODE)
+    try:
+        f = open(filename, "w")
+        f.write("%d\n" % (current_climate_mode))
+        f.close()
+    except:
+        logging.error("Error writing file '%s'" % (filename))
+
+    # bsm - tbf:
+    export_status()
+    display_mode()
+
+#-------------------------------------------------------------------------
 # Interrupt driven handler for button #1 press.
 #-------------------------------------------------------------------------
 def button1_handler(gpio):
@@ -874,8 +920,9 @@ def timer1():
 def timer2():
     global exit_program
     global timer2_next_call, timer2_thread
-    global switch1_last_change, switch1_state
-    global gauge1_value, gauge1_required, current_mode
+    global switch_last_change, switch1_state
+    global gauge1_value, gauge1_required, current_mode,current_climate_mode
+    global manual_temp_required,old_manual_temp_required,old_program_temp_required
     global button1_last_press
 
     timer2_interval = 5
@@ -887,23 +934,32 @@ def timer2():
     # Update temperature display.
     gauge1_value = gauge1_read()
     display_temperature()
-    # Update mode display.
-    gauge1_required = programmed_temp(time.localtime())
+    # Update temp target & mode display.
+    #  bsm - add logic for manual temperature target-
+    new_program_temp_required = programmed_temp(time.localtime())    
+    if (manual_temp_required ne old_manual_temp_required):
+        gauge1_required = manual_temp_required
+        old_manual_temp_required = manual_temp_required
+    if (new_program_temp_required != old_program_temp_required):
+        gauge1_required = new_program_temp_required
+        old_program_temp_required = new_program_temp_required
     display_mode()
 
     logging.debug("Temperature is %s, required %s (±%.1f)" %(gauge1_value, gauge1_required, TEMP_HYSTERESIS))
 
     # bsm tbf - this is the meat of the thermostat logic. may want to rename this routine timer2_3relay e.g.
     #  tbf - global current_climate_mode w/corresponding file
-
+    #      -  climate mode setting mechanisms (telegram / web page)
+    # tbf = switch1_hysteresis -> switch_hysteresis in cfg file
+    # tbf = add manual temp target setting to socket & web IX; also current temp setting.
     if current_mode in MANUAL_MODES:
         # Manual modes.
         if current_mode == MODE_MANUAL_OFF:
             manual_state = RELAY_OFF
         else:
             manual_state = RELAY_ON
-        if manual_state != switch1_state:
-            hyst1 = time.time() - switch1_last_change
+        if manual_state != switch2_state:
+            hyst1 = time.time() - switch_last_change
             hyst2 = time.time() - button1_last_press
             if (hyst1 < MANUAL_HYSTERESIS or hyst2 < BUTTON1_HYSTERESIS):
                 logging.debug("Waiting hysteresis time before toggling switch1")
@@ -916,45 +972,51 @@ def timer2():
                     switch3_state = manual_state
                 else:
                     switch2_state = manual_state
-                logging.info("Mode is '%s', setting switch1 to %s" % (MODES[current_mode], switch1_state == RELAY_ON))
+                logging.info("Mode is '%s / %s', setting switches to %s / %s / %s" % (MODES[current_mode], CLIMATE_MODES[current_climate_mode], switch1_state == RELAY_ON, switch2_state == RELAY_ON, switch3_state == RELAY_ON))
                 # Update switch1 status display.
-                display_switch1(switch1_state == RELAY_ON)
+                display_switch1(switch2_state == RELAY_ON)
                 GPIO.output(SWITCH1_GPIO, switch1_state)
-                switch1_last_change = time.time()
+                GPIO.output(SWITCH2_GPIO, switch2_state)
+                GPIO.output(SWITCH3_GPIO, switch3_state)
+                switch_last_change = time.time()
     elif (gauge1_value != None and gauge1_required != None):
         # Program modes.
         #  queue off switch2 (fan) since it will be on or off in all modes
         #     and climate_mode to set temp_logic
         if (CLIMATE_MODES[current_climate_mode] == 'HEAT'):
             if (gauge1_value >= (gauge1_required + TEMP_HYSTERESIS) and switch2_state == RELAY_ON) or (gauge1_value < (gauge1_required - TEMP_HYSTERESIS) and switch2_state == RELAY_OFF):
-                hyst1 = time.time() - switch1_last_change
+                hyst1 = time.time() - switch_last_change
                 hyst2 = time.time() - button1_last_press
-                if (hyst1 < SWITCH1_HYSTERESIS or hyst2 < BUTTON1_HYSTERESIS):
+                if (hyst1 < SWITCH_HYSTERESIS or hyst2 < BUTTON1_HYSTERESIS):
                     logging.debug("Waiting hysteresis time before toggling switch1")
                 else:
                     switch1_state = not switch1_state # heat
                     switch2_state = not switch2_state # fan
-                    logging.info("Temperature is %.2f, '%s' requires %.2f (±%.1f), setting switch1 to %s" % (gauge1_value, MODES[current_mode], gauge1_required, TEMP_HYSTERESIS, switch2_state == RELAY_ON))
+                    logging.info("Temperature is %.2f, '%s / %s' requires %.2f (±%.1f), setting switches to %s / %s / %s" % (gauge1_value, MODES[current_mode], CLIMATE_MODES[current_climate_mode], gauge1_required, TEMP_HYSTERESIS, switch1_state == RELAY_ON, switch2_state == RELAY_ON, switch3_state == RELAY_ON))
                     # Update switch1 status display.
-                    display_switch1(switch1_state == RELAY_ON)
+                    display_switch1(switch2_state == RELAY_ON)
                     GPIO.output(SWITCH1_GPIO, switch1_state)
-                    switch1_last_change = time.time()
+                    GPIO.output(SWITCH2_GPIO, switch2_state)
+                    GPIO.output(SWITCH3_GPIO, switch3_state)
+                    switch_last_change = time.time()
         else:
             # fan or AC, both 'cooling' modes-
             if (gauge1_value <= (gauge1_required - TEMP_HYSTERESIS) and switch2_state == RELAY_ON) or (gauge1_value > (gauge1_required + TEMP_HYSTERESIS) and switch2_state == RELAY_OFF):
-                hyst1 = time.time() - switch1_last_change
+                hyst1 = time.time() - switch_last_change
                 hyst2 = time.time() - button1_last_press
-                if (hyst1 < SWITCH1_HYSTERESIS or hyst2 < BUTTON1_HYSTERESIS):
+                if (hyst1 < SWITCH_HYSTERESIS or hyst2 < BUTTON1_HYSTERESIS):
                     logging.debug("Waiting hysteresis time before toggling switch1")
                 else:
                     switch2_state = not switch2_state
                     if (CLIMATE_MODES[current_climate_mode] == 'COOL'):
                         switch3_state = not switch3_state
-                    logging.info("Temperature is %.2f, '%s' requires %.2f (±%.1f), setting switch2 to %s" % (gauge1_value, MODES[current_mode], gauge1_required, TEMP_HYSTERESIS, switch2_state == RELAY_ON))
+                    logging.info("Temperature is %.2f, '%s / %s' requires %.2f (±%.1f), setting switch2 to %s / %s / %s" % (gauge1_value, MODES[current_mode], CLIMATE_MODES[current_climate_mode] , gauge1_required, TEMP_HYSTERESIS, switch1_state == RELAY_ON, switch2_state == RELAY_ON , switch3_state == RELAY_ON))
                     # Update switch1 status display.
-                    display_switch1(switch1_state == RELAY_ON)
+                    display_switch1(switch2_state == RELAY_ON)
                     GPIO.output(SWITCH1_GPIO, switch1_state)
-                    switch1_last_change = time.time()
+                    GPIO.output(SWITCH2_GPIO, switch2_state)
+                    GPIO.output(SWITCH3_GPIO, switch3_state)
+                    switch_last_change = time.time()
 
     export_status()
     # Prepare the execution of next timer2.
@@ -976,9 +1038,9 @@ def program_main():
     global exit_program
     global timer1_thread, timer1_next_call
     global timer2_thread, timer2_next_call
-    global switch1_state, switch1_last_change
+    global switch1_state, switch_last_change
     global button1_last_press
-    global current_mode, programs
+    global current_mode, current_climate_mode, programs
 
     os.umask (022)
     shm_initialize()
@@ -1025,7 +1087,9 @@ def program_main():
 
     logging.info("Starting timer #2 for temp sensor and relay switch")
     switch1_state = RELAY_OFF
-    switch1_last_change = time.time() - SWITCH1_HYSTERESIS
+    switch2_state = RELAY_OFF
+    switch3_state = RELAY_OFF
+    switch_last_change = time.time() - SWITCH_HYSTERESIS
     timer2_next_call = time.time()
     timer2()
 
@@ -1110,6 +1174,7 @@ def get_stats():
     global time_ntp_status
     global network_iface, network_addr, network_strength
     global current_mode, gauge1_value, gauge1_required, switch1_state
+    global switch2_state,switch3_state,current_climate_mode
 
     timestamp = int(time.time())
     temp_measured = temp_required = None
@@ -1120,7 +1185,10 @@ def get_stats():
         relay_state = 1
     else:
         relay_state = 0
-    return "%s %s %s %s %s %s %s %s %s" % (timestamp, time_ntp_status, network_iface, network_addr, network_strength, mode, temp_measured, temp_required, relay_state)
+    # bsm - modify this to return switch{2,3}; climate_mode
+    return "%s %s %s %s %s %s %s %s %s %s %s %s" % (timestamp, time_ntp_status, network_iface, network_addr, network_strength, \
+        mode, current_climate_mode, temp_measured, temp_required, (switch1_state==RELAY_ON),(switch2_state==RELAY_ON), \
+        (switch3_state==RELAY_ON) )
 
 #-------------------------------------------------------------------------
 # Expose internal data through a file (use shared memory!).

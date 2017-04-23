@@ -170,23 +170,29 @@ def get_response_from_socket(cmd):
 def read_stats():
     # Everything is unknown per default.
     stats = {}
-    for key in ('timestamp', 'time_ntp_status', 'network_iface', 'network_addr', 'network_strength', 'current_mode', 'temp', 'temp_required', 'switch1'):
+    for key in ('timestamp', 'time_ntp_status', 'network_iface', 'network_addr', 'network_strength', 'current_mode',  \
+        'current_climate_mode', 'temp', 'temp_required', 'switch1', 'switch2', 'switch3'):
         stats[key] = None
     received = get_response_from_socket("STATS")
     # Example of stats line: "1449067190 NTP_OK wlan0 192.168.10.2 100 PROG1 17687 14000 0"
     if received != None:
         d = received.strip().split()
-        if len(d) == 9:
+        if len(d) == 12:
             if d[0].isdigit(): stats['timestamp'] = int(d[0])
             stats['time_ntp_status'] = d[1]
             stats['network_iface'] = d[2]
             stats['network_addr'] = d[3]
             stats['network_strength'] = d[4]
             stats['current_mode'] = d[5]
-            if d[6].isdigit(): stats['temp'] = int(d[6]) / 1000.0
-            if d[7].isdigit(): stats['temp_required'] = int(d[7]) / 1000.0
-            if d[8] == "1": stats['switch1'] = True
-            elif d[8] == "0": stats['switch1'] = False
+            stats['current_cilmate_mode'] = d[6]
+            if d[7].isdigit(): stats['temp'] = int(d[7) / 1000.0
+            if d[8].isdigit(): stats['temp_required'] = int(d[8]) / 1000.0
+            if d[9] == "1": stats['switch1'] = True
+            elif d[9] == "0": stats['switch1'] = False
+             if d[10] == "1": stats['switch2'] = True
+            elif d[10] == "0": stats['switch2'] = False
+             if d[11] == "1": stats['switch3'] = True
+            elif d[11] == "0": stats['switch3'] = False
         else:
             logging.error(u"Invalid STATS response: \"%s\", stats = %s" % (d, stats))
     return stats
@@ -205,6 +211,9 @@ def display_name(chat):
 # Return a message with current temperature and status.
 #-------------------------------------------------------------------------
 def temp_message():
+
+    # bsm - tbf - italian!
+
     stats = read_stats()
     if stats['timestamp'] != None:
         stats_time = time.strftime("%H:%M", time.localtime(stats['timestamp']))
@@ -260,8 +269,10 @@ def tmsg_handle(msg):
     command = msg['text']
     logging.info('Got text command: "%s" from %s, chat_id %s' % (command, display_name(msg['from']), chat_id))
 
-    custom_keyboard = {'keyboard': [['/temp','/lcd', '/graph', '/help'], ['/set', '/view']], 'resize_keyboard': True}
+    custom_keyboard = {'keyboard': [['/temp','/lcd', '/graph', '/help'], ['/set', '/view','/heat','/cool','/fan']], 'resize_keyboard': True}
     no_custom_keyboard = {'hide_keyboard': True}
+
+    # bsm - tbf - italian!
 
     if command == '/start':
         bot.sendMessage(chat_id, u"Con questo bot si può comandare il termostato programmabile fatto con il Raspberry-Pi. I comandi principali sono /temp, /lcd e /graph\n\nVedi http://www.rigacci.org/wiki/doku.php/doc/appunti/hardware/raspberrypi_thermostat")
@@ -273,6 +284,9 @@ def tmsg_handle(msg):
 /lcd mostra lo schermo LCD
 /graph grafico della temperatura
 /set imposta il programma
+/heat
+/cool
+/fan 
 /view vedi i programmi disponibili
 /who chi è in linea con il bot
 /help mostra questo messaggio"""
@@ -353,6 +367,19 @@ def tmsg_handle(msg):
             msg = u"Ho inviato il comando al termostato che ha risposto: %s" %(response)
             bot.sendMessage(chat_id, msg, reply_markup=custom_keyboard)
 
+    # bsm - add /heat , /fan, & /cool climate mode settings->
+    elif command == '/heat' || command == '/cool' || command == '/fan':
+        if not chat_id in authorized_ids:
+            logging.error(u"Unauthorized '%s' command from %s, not in %s" % (command, chat_id, authorized_ids))
+            msg = u"Non sei autorizzato a cambiare programma al termostato. Chiedi all'amministratore di aggiungere il tuo ID (%d) all'elenco degli autorizzati." % (chat_id)
+            bot.sendMessage(chat_id, msg, reply_markup=custom_keyboard)
+        else:
+            trans_cmd = command.upper()[1:]
+            logging.info(u"Authorized '%s' command from %s" % (command, chat_id))
+            response = get_response_from_socket("HEAT %s" % (trans_cmd))
+            msg = u"Ho inviato il comando al termostato che ha risposto: %s" %(response)
+            bot.sendMessage(chat_id, msg, reply_markup=custom_keyboard)
+
     else:
         msg = u"Non ho capito. Se non sai cosa fare prova il comando /help"
         bot.sendMessage(chat_id, msg, reply_markup=custom_keyboard)
@@ -361,6 +388,9 @@ def tmsg_handle(msg):
 # Send an "I'm alive" message.
 #-------------------------------------------------------------------------
 def alive_message():
+    
+    # bsm - tbf - italian
+
     global bot, active_chats
     me = bot.getMe()
     if 'username' in me.keys() and 'id' in me.keys():
@@ -415,6 +445,8 @@ def load_runtime_data():
 #-------------------------------------------------------------------------
 def program_main():
     global bot, exit_program, active_chats
+
+    # bsm - tbf - italian
 
     load_runtime_data()
 
