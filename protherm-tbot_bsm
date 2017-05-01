@@ -184,14 +184,14 @@ def read_stats():
             stats['network_addr'] = d[3]
             stats['network_strength'] = d[4]
             stats['current_mode'] = d[5]
-            stats['current_cilmate_mode'] = d[6]
-            if d[7].isdigit(): stats['temp'] = int(d[7) / 1000.0
+            stats['current_climate_mode'] = d[6]
+            if d[7].isdigit(): stats['temp'] = int(d[7]) / 1000.0
             if d[8].isdigit(): stats['temp_required'] = int(d[8]) / 1000.0
             if d[9] == "1": stats['switch1'] = True
             elif d[9] == "0": stats['switch1'] = False
-             if d[10] == "1": stats['switch2'] = True
+            if d[10] == "1": stats['switch2'] = True
             elif d[10] == "0": stats['switch2'] = False
-             if d[11] == "1": stats['switch3'] = True
+            if d[11] == "1": stats['switch3'] = True
             elif d[11] == "0": stats['switch3'] = False
         else:
             logging.error(u"Invalid STATS response: \"%s\", stats = %s" % (d, stats))
@@ -368,7 +368,7 @@ def tmsg_handle(msg):
             bot.sendMessage(chat_id, msg, reply_markup=custom_keyboard)
 
     # bsm - add /heat , /fan, & /cool climate mode settings->
-    elif command == '/heat' || command == '/cool' || command == '/fan':
+    elif command == '/heat' or command == '/cool' or command == '/fan':
         if not chat_id in authorized_ids:
             logging.error(u"Unauthorized '%s' command from %s, not in %s" % (command, chat_id, authorized_ids))
             msg = u"Non sei autorizzato a cambiare programma al termostato. Chiedi all'amministratore di aggiungere il tuo ID (%d) all'elenco degli autorizzati." % (chat_id)
@@ -379,9 +379,9 @@ def tmsg_handle(msg):
             if command == '/heat':
                 trans_cmd = 'HEAT'
             if command == '/cool':
-                trans_cmd == 'COOL'
+                trans_cmd = 'COOL'
             if command == '/fan':
-                trans_cmd == 'FAN'
+                trans_cmd = 'FAN'
             response = get_response_from_socket("%s" % (trans_cmd))
             msg = u"Ho inviato il comando al termostato che ha risposto: %s" %(response)
             bot.sendMessage(chat_id, msg, reply_markup=custom_keyboard)
