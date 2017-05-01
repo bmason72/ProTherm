@@ -388,15 +388,15 @@ class socket_tcp_handler(SocketServer.StreamRequestHandler):
             elif self.data.upper() == 'HEAT':
                 logging.info(msg)
                 self.request.sendall(u"OK: Setting climate mode to HEAT")
-                # set climate mode to heat here
+                climate_mode_change(CLIMATE_MODES.keys()[CLIMATE_MODES.values().index('HEAT')])
             elif self.data.upper() == 'COOL':
                 logging.info(msg)
                 self.request.sendall(u"OK: Setting climate mode to COOL")
-                # set climate mode to cool here
+                climate_mode_change(CLIMATE_MODES.keys()[CLIMATE_MODES.values().index('COOL')])
             elif self.data.upper() == 'FAN':
                 logging.info(msg)
                 self.request.sendall(u"OK: Setting climate mode to FAN")
-                # set climate mode to fan here
+                climate_mode_change(CLIMATE_MODES.keys()[CLIMATE_MODES.values().index('FAN')])
             else:
                 logging.info(msg)
                 self.request.sendall(u'Error: command not recognized\n')
@@ -1061,6 +1061,8 @@ def program_main():
         GPIO.setup(BUTTON1_GPIO, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
     current_mode = MODE_DEFAULT
+    current_climate_mode = CLIMATE_MODE_DEFAULT
+    
     filename = os.path.join(DATA_DIR, CURR_MODE)
     logging.info("Reading current mode from '%s'" % (filename))
     try:
