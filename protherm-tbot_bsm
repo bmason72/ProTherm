@@ -374,9 +374,15 @@ def tmsg_handle(msg):
             msg = u"Non sei autorizzato a cambiare programma al termostato. Chiedi all'amministratore di aggiungere il tuo ID (%d) all'elenco degli autorizzati." % (chat_id)
             bot.sendMessage(chat_id, msg, reply_markup=custom_keyboard)
         else:
-            trans_cmd = command.upper()[1:]
+            #trans_cmd = command.upper()[1:]
             logging.info(u"Authorized '%s' command from %s" % (command, chat_id))
-            response = get_response_from_socket("HEAT %s" % (trans_cmd))
+            if command == '/heat':
+                trans_cmd = 'HEAT'
+            if command == '/cool':
+                trans_cmd == 'COOL'
+            if command == '/fan':
+                trans_cmd == 'FAN'
+            response = get_response_from_socket("%s" % (trans_cmd))
             msg = u"Ho inviato il comando al termostato che ha risposto: %s" %(response)
             bot.sendMessage(chat_id, msg, reply_markup=custom_keyboard)
 
