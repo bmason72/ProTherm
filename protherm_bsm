@@ -937,7 +937,7 @@ def timer2():
     # Update temp target & mode display.
     #  bsm - add logic for manual temperature target-
     new_program_temp_required = programmed_temp(time.localtime())    
-    if (manual_temp_required ne old_manual_temp_required):
+    if (manual_temp_required != old_manual_temp_required):
         gauge1_required = manual_temp_required
         old_manual_temp_required = manual_temp_required
     if (new_program_temp_required != old_program_temp_required):
