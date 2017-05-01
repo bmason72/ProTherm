@@ -858,7 +858,7 @@ def climate_mode_change(mode):
         return
 
     current_climate_mode = mode;
-    logging.info("Changing mode to '%s'" % (CLIMATE_MODES[current_climate_mode]))
+    logging.info("Changing climate mode to '%s'" % (CLIMATE_MODES[current_climate_mode]))
 
     # Write down current mode to file.
     filename = os.path.join(DATA_DIR, CURR_CMODE)
@@ -967,7 +967,9 @@ def timer2():
                 if (CLIMATE_MODES[current_climate_mode]=='HEAT'):
                     switch1_state = manual_state
                     switch2_state = manual_state
+                    switch3_state = RELAY_OFF
                 elif (CLIMATE_MODES[current_climate_mode]=='COOL'):
+                    switch1_state = RELAY_OFF
                     switch2_state = manual_state
                     switch3_state = manual_state
                 else:
