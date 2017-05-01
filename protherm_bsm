@@ -920,7 +920,7 @@ def timer1():
 def timer2():
     global exit_program
     global timer2_next_call, timer2_thread
-    global switch_last_change, switch1_state
+    global switch_last_change, switch1_state,switch2_state, switch3_state
     global gauge1_value, gauge1_required, current_mode,current_climate_mode
     global manual_temp_required,old_manual_temp_required,old_program_temp_required
     global button1_last_press
@@ -1038,7 +1038,7 @@ def program_main():
     global exit_program
     global timer1_thread, timer1_next_call
     global timer2_thread, timer2_next_call
-    global switch1_state, switch_last_change
+    global switch1_state, switch_last_change, switch2_state, switch3_state
     global button1_last_press
     global current_mode, current_climate_mode, programs
 
