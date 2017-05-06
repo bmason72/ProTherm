@@ -125,7 +125,7 @@ ENABLE_PASSWORD = "1234"
 # Other configuration.
 #-------------------------------------------------------------------------
 # Hysteresis times before changing switch state.
-SWITCH_HYSTERESIS = 300   # Hysteresis in program mode
+SWITCH_HYSTERESIS = 30   # Hysteresis in program mode
 MANUAL_HYSTERESIS  = 20    # Hysteresis in manual (ON/OFF) mode
 BUTTON1_HYSTERESIS = 20    # Hysteresis after pressing button
 # Programmed temperature hysteresis for changing switch state.
@@ -143,7 +143,7 @@ CLIMATE_MODE_DEFAULT=0
 # Run as a daemon and logging options.
 BE_DAEMON = True
 # From logging module: NOTSET, DEBUG, INFO, WARNING, ERROR, CRITICAL
-LOG_LEVEL = "INFO"
+LOG_LEVEL = "DEBUG"
 # False for syslog logging, filename for file logging.
 #LOG_TO_FILE = False
 LOG_TO_FILE = "/var/log/protherm.log"
@@ -851,7 +851,7 @@ def mode_change(mode):
 # bsm - Set new climate mode (index of CLIMATE_MODES dictionary).
 #-------------------------------------------------------------------------
 def climate_mode_change(mode):
-    global current_climate_mode
+    global current_climate_mode,switch_last_change
 
     if (not mode in CLIMATE_MODES.keys()):
         logging.error("Invalid climate mode %d requested" % (mode))
@@ -859,6 +859,10 @@ def climate_mode_change(mode):
 
     current_climate_mode = mode;
     logging.info("Changing mode to '%s'" % (CLIMATE_MODES[current_climate_mode]))
+
+    # set switches to OFF
+    GPIO.output((SWITCH1_GPIO, SWITCH2_GPIO, SWITCH3_GPIO), RELAY_OFF)
+    switch_last_change = time.time()
 
     # Write down current mode to file.
     filename = os.path.join(DATA_DIR, CURR_CMODE)
@@ -979,6 +983,7 @@ def timer2():
                 GPIO.output(SWITCH2_GPIO, switch2_state)
                 GPIO.output(SWITCH3_GPIO, switch3_state)
                 switch_last_change = time.time()
+                logging.debug("Toggled switches!")
     elif (gauge1_value != None and gauge1_required != None):
         # Program modes.
         #  queue off switch2 (fan) since it will be on or off in all modes
@@ -999,6 +1004,7 @@ def timer2():
                     GPIO.output(SWITCH2_GPIO, switch2_state)
                     GPIO.output(SWITCH3_GPIO, switch3_state)
                     switch_last_change = time.time()
+                    logging.debug("changed switch states")
         else:
             # fan or AC, both 'cooling' modes-
             if (gauge1_value <= (gauge1_required - TEMP_HYSTERESIS) and switch2_state == RELAY_ON) or (gauge1_value > (gauge1_required + TEMP_HYSTERESIS) and switch2_state == RELAY_OFF):
@@ -1052,8 +1058,8 @@ def program_main():
     # Suppress "This channel is already in use" warning, if restart after crash.
     GPIO.setwarnings(False)
     # Setup relays GPIOs as output and turn off them.
-    GPIO.setup((SWITCH1_GPIO, SWITCH2_GPIO), GPIO.OUT)
-    GPIO.output((SWITCH1_GPIO, SWITCH2_GPIO), RELAY_OFF)
+    GPIO.setup((SWITCH1_GPIO, SWITCH2_GPIO, SWITCH3_GPIO), GPIO.OUT)
+    GPIO.output((SWITCH1_GPIO, SWITCH2_GPIO, SWITCH3_GPIO), RELAY_OFF)
     # Set button GPIO as input, default state via software PULL-UP/DOWN.
     if BUTTON1_ACTIVE_HIGH:
         GPIO.setup(BUTTON1_GPIO, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
