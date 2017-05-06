@@ -965,7 +965,7 @@ def timer2():
         if manual_state != switch2_state:
             hyst1 = time.time() - switch_last_change
             hyst2 = time.time() - button1_last_press
-            logging.debug("prog. manual logic branch, mode = %s / %s , switches = %s / %s / %s " % ( MODES[current_mode], CLIMATE_MODES[current_climate_mode] , switch1_state == RELAY_ON, switch2_state == RELAY_ON , switch3_state == RELAY_ON)))
+            logging.debug("prog. manual logic branch, mode = %s / %s , switches = %s / %s / %s " % ( MODES[current_mode], CLIMATE_MODES[current_climate_mode] , switch1_state == RELAY_ON, switch2_state == RELAY_ON , switch3_state == RELAY_ON))
 
             if (hyst1 < MANUAL_HYSTERESIS or hyst2 < BUTTON1_HYSTERESIS):
                 logging.debug("Waiting hysteresis time before toggling switch1")
@@ -996,7 +996,7 @@ def timer2():
             if (gauge1_value >= (gauge1_required + TEMP_HYSTERESIS) and switch2_state == RELAY_ON) or (gauge1_value < (gauge1_required - TEMP_HYSTERESIS) and switch2_state == RELAY_OFF):
                 hyst1 = time.time() - switch_last_change
                 hyst2 = time.time() - button1_last_press
-                logging.debug("prog. HEAT logic branch, mode = %s / %s , switches = %s / %s / %s " % ( MODES[current_mode], CLIMATE_MODES[current_climate_mode] , switch1_state == RELAY_ON, switch2_state == RELAY_ON , switch3_state == RELAY_ON)))
+                logging.debug("prog. HEAT logic branch, mode = %s / %s , switches = %s / %s / %s " % ( MODES[current_mode], CLIMATE_MODES[current_climate_mode] , switch1_state == RELAY_ON, switch2_state == RELAY_ON , switch3_state == RELAY_ON))
                 if (hyst1 < SWITCH_HYSTERESIS or hyst2 < BUTTON1_HYSTERESIS):
                     logging.debug("Waiting hysteresis time before toggling switch1")
                 else:
@@ -1015,7 +1015,7 @@ def timer2():
             if (gauge1_value <= (gauge1_required - TEMP_HYSTERESIS) and switch2_state == RELAY_ON) or (gauge1_value > (gauge1_required + TEMP_HYSTERESIS) and switch2_state == RELAY_OFF):
                 hyst1 = time.time() - switch_last_change
                 hyst2 = time.time() - button1_last_press
-                logging.debug("prog. FAN/AC logic branch, mode = %s / %s , switches = %s / %s / %s " % ( MODES[current_mode], CLIMATE_MODES[current_climate_mode] , switch1_state == RELAY_ON, switch2_state == RELAY_ON , switch3_state == RELAY_ON)))
+                logging.debug("prog. FAN/AC logic branch, mode = %s / %s , switches = %s / %s / %s " % ( MODES[current_mode], CLIMATE_MODES[current_climate_mode] , switch1_state == RELAY_ON, switch2_state == RELAY_ON , switch3_state == RELAY_ON))
                 if (hyst1 < SWITCH_HYSTERESIS or hyst2 < BUTTON1_HYSTERESIS):
                     logging.debug("Waiting hysteresis time before toggling switch1")
                 else:
