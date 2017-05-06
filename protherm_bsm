@@ -644,10 +644,11 @@ def display_temperature():
 
     # Range from -55.0 to 125.0 Celsius.
     if isinstance(gauge1_value, int) or isinstance(gauge1_value, float):
-        if DEGREES_UNIT == "F":
-            display_value = (gauge1_value * 9.0 / 5.0) + 32.0
-        else:
-            display_value = gauge1_value
+        #if DEGREES_UNIT == "F":
+        #    display_value = (gauge1_value * 9.0 / 5.0) + 32.0
+        #else:
+        #    display_value = gauge1_value
+        display_value = gauge1_value
         label = u"%.1f °%s" % (display_value, DEGREES_UNIT)
     else:
         label = u"N/A °%s" % (DEGREES_UNIT)
@@ -932,7 +933,7 @@ def timer2():
     global switch_last_change, switch1_state,switch2_state, switch3_state
     global gauge1_value, gauge1_required, current_mode,current_climate_mode
     global manual_temp_required,old_manual_temp_required,old_program_temp_required
-    global button1_last_press,old_climate_mode,use_farenheit
+    global button1_last_press,old_climate_mode,use_farenheit,DEGREES_UNIT
 
     timer2_interval = 5
     logging.debug("Executing timer2()")
@@ -952,13 +953,19 @@ def timer2():
     display_network()
     # Update temperature display.
     gauge1_value = gauge1_read()
-    if (gauge1_required > 40)
+    if (gauge1_required > 39.0)
         gauge1_value = gauge1_value*9.0/5.0+32.
         use_farenheit = True
-        logging.debug("Target temp > 40, using Fahrenheit.")
+        DEGREES_UNIT = 'F'
+        logging.debug("Target temp > 39, using Fahrenheit.")
     else:
+        # when gauge1_value = None this is the default ->
         use_farenheit = False
-        logging.debug("Target temp < 40, using Celsius.")
+        DEGREES_UNIT = 'C'
+        logging.debug("Target temp < 39, using Celsius.")
+
+    # BSM - tbf - reconcile with pre-existing mechanism, which was DEGREES_UNIT
+    #  but that only affects the display...
 
     display_temperature()
     # Update temp target & mode display.
