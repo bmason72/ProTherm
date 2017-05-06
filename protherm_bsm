@@ -932,7 +932,7 @@ def timer2():
     global switch_last_change, switch1_state,switch2_state, switch3_state
     global gauge1_value, gauge1_required, current_mode,current_climate_mode
     global manual_temp_required,old_manual_temp_required,old_program_temp_required
-    global button1_last_press,old_climate_mode
+    global button1_last_press,old_climate_mode,use_farenheit
 
     timer2_interval = 5
     logging.debug("Executing timer2()")
@@ -944,6 +944,7 @@ def timer2():
         switch3_state=RELAY_OFF
         GPIO.output((SWITCH1_GPIO,SWITCH2_GPIO,SWITCH3_GPIO),RELAY_OFF)
         switch_last_change=time.time()
+        old_climate_mode = current_climate_mode
 
     # Update system information data display.
     display_sys()
@@ -951,16 +952,45 @@ def timer2():
     display_network()
     # Update temperature display.
     gauge1_value = gauge1_read()
+    if (gauge1_required > 40)
+        gauge1_value = gauge1_value*9.0/5.0+32.
+        use_farenheit = True
+        logging.debug("Target temp > 40, using Fahrenheit.")
+    else:
+        use_farenheit = False
+        logging.debug("Target temp < 40, using Celsius.")
+
     display_temperature()
     # Update temp target & mode display.
     #  bsm - add logic for manual temperature target-
-    new_program_temp_required = programmed_temp(time.localtime())    
+    new_program_temp_required = programmed_temp(time.localtime()) 
     if (manual_temp_required != old_manual_temp_required):
         gauge1_required = manual_temp_required
         old_manual_temp_required = manual_temp_required
     if (new_program_temp_required != old_program_temp_required):
         gauge1_required = new_program_temp_required
         old_program_temp_required = new_program_temp_required
+
+    # set limits - 
+    if ( CLIMATE_MODES[current_climate_mode] == 'COOL' or CLIMATE_MODES[current_climate_mode] == 'FAN'):
+        if (use_farenheit):
+            if (gauge1_required < 60):
+                gauge1_required = 60.0
+                logging.warning("Required temp. too low for cooling mode, set to ",gauge1_required," F")
+        else:
+            if (gauge1_required < 15.6):
+                gauge1_required = 15.6
+                logging.warning("Required temp. too low for cooling mode, set to ",gauge1_required," C")
+    if ( CLIMATE_MODES[current_climate_mode] == 'HEAT'):
+        if (use_farenheit):
+            if (gauge1_required > 80):
+                gauge1_required = 80.0
+                logging.warning("Required temp. too high for heating mode, set to ",gauge1_required," F")                
+        else:
+            if (gauge1_required > 26.7):
+                gauge1_required = 26.7
+                logging.warning("Required temp. too high for heating mode, set to ",gauge1_required," C")                
+
     display_mode()
 
     logging.debug("Temperature is %s, required %s (±%.1f)" %(gauge1_value, gauge1_required, TEMP_HYSTERESIS))
@@ -1046,7 +1076,6 @@ def timer2():
 
     export_status()
 
-    old_climate_mode = current_climate_mode
     # Prepare the execution of next timer2.
     timer2_next_call += timer2_interval
     interval = timer2_next_call - time.time()
