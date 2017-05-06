@@ -307,6 +307,8 @@ switch3_state = None
 
 button1_last_press = None
 
+old_climate_mode = None
+
 exit_program = False
 
 # "NTP_OK", "NTP_WARNING" or "NTP_ERROR"
@@ -851,7 +853,7 @@ def mode_change(mode):
 # bsm - Set new climate mode (index of CLIMATE_MODES dictionary).
 #-------------------------------------------------------------------------
 def climate_mode_change(mode):
-    global current_climate_mode,switch_last_change
+    global current_climate_mode,switch_last_change,switch1_state,switch2_state,switch3_state
 
     if (not mode in CLIMATE_MODES.keys()):
         logging.error("Invalid climate mode %d requested" % (mode))
@@ -861,8 +863,11 @@ def climate_mode_change(mode):
     logging.info("Changing climate mode to '%s'" % (CLIMATE_MODES[current_climate_mode]))
 
     # set switches to OFF
-    GPIO.output((SWITCH1_GPIO, SWITCH2_GPIO, SWITCH3_GPIO), RELAY_OFF)
-    switch_last_change = time.time()
+    #switch1_state=RELAY_OFF
+    #switch2_state=RELAY_OFF
+    #switch3_state=RELAY_OFF
+    #GPIO.output((SWITCH1_GPIO, SWITCH2_GPIO, SWITCH3_GPIO), RELAY_OFF)
+    #switch_last_change = time.time()
 
     # Write down current mode to file.
     filename = os.path.join(DATA_DIR, CURR_CMODE)
@@ -927,10 +932,19 @@ def timer2():
     global switch_last_change, switch1_state,switch2_state, switch3_state
     global gauge1_value, gauge1_required, current_mode,current_climate_mode
     global manual_temp_required,old_manual_temp_required,old_program_temp_required
-    global button1_last_press
+    global button1_last_press,old_climate_mode
 
     timer2_interval = 5
     logging.debug("Executing timer2()")
+
+    if (old_climate_mode != current_climate_mode):
+        logging.debug("Climate mode changed, resetting state variables & relays.")
+        switch1_state=RELAY_OFF
+        switch2_state=RELAY_OFF
+        switch3_state=RELAY_OFF
+        GPIO.output((SWITCH1_GPIO,SWITCH2_GPIO,SWITCH3_GPIO),RELAY_OFF)
+        switch_last_change=time.time()
+
     # Update system information data display.
     display_sys()
     # Update network data display.
@@ -1031,6 +1045,8 @@ def timer2():
                     switch_last_change = time.time()
 
     export_status()
+
+    old_climate_mode = current_climate_mode
     # Prepare the execution of next timer2.
     timer2_next_call += timer2_interval
     interval = timer2_next_call - time.time()
