@@ -953,6 +953,16 @@ def timer2():
     display_network()
     # Update temperature display.
     gauge1_value = gauge1_read()
+
+    #  bsm - add logic for manual temperature target-
+    new_program_temp_required = programmed_temp(time.localtime()) 
+    if (manual_temp_required != old_manual_temp_required):
+        gauge1_required = manual_temp_required
+        old_manual_temp_required = manual_temp_required
+    if (new_program_temp_required != old_program_temp_required):
+        gauge1_required = new_program_temp_required
+        old_program_temp_required = new_program_temp_required
+
     if (gauge1_required > 39.0):
         gauge1_value = gauge1_value*9.0/5.0+32.
         use_farenheit = True
@@ -966,17 +976,6 @@ def timer2():
 
     # BSM - tbf - reconcile with pre-existing mechanism, which was DEGREES_UNIT
     #  but that only affects the display...
-
-    display_temperature()
-    # Update temp target & mode display.
-    #  bsm - add logic for manual temperature target-
-    new_program_temp_required = programmed_temp(time.localtime()) 
-    if (manual_temp_required != old_manual_temp_required):
-        gauge1_required = manual_temp_required
-        old_manual_temp_required = manual_temp_required
-    if (new_program_temp_required != old_program_temp_required):
-        gauge1_required = new_program_temp_required
-        old_program_temp_required = new_program_temp_required
 
     # set limits - 
     if ( CLIMATE_MODES[current_climate_mode] == 'COOL' or CLIMATE_MODES[current_climate_mode] == 'FAN'):
@@ -998,6 +997,8 @@ def timer2():
                 gauge1_required = 26.7
                 logging.warning("Required temp. too high for heating mode, set to %s C " % (gauge1_required))                
 
+    display_temperature()
+    # Update temp target & mode display.
     display_mode()
 
     logging.debug("Temperature is %s, required %s (±%.1f)" %(gauge1_value, gauge1_required, TEMP_HYSTERESIS))
