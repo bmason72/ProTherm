@@ -599,6 +599,7 @@ def lcd_initialize():
     # Load some icons and convert to 1 bit color.
     lcd_icon['fire']    = Image.open(os.path.join(ICONS_DIR, 'fire.ppm')).convert('1')
     lcd_icon['snow']    = Image.open(os.path.join(ICONS_DIR, 'snow.ppm')).convert('1')
+    lcd_icon['fan']    = Image.open(os.path.join(ICONS_DIR, 'fan.ppm')).convert('1')
     lcd_icon['blank']   = Image.open(os.path.join(ICONS_DIR, 'blank.ppm')).convert('1')
     lcd_icon['ethlink'] = Image.open(os.path.join(ICONS_DIR, 'ethlink.ppm')).convert('1')
     for n in (0, 25, 50, 75, 100):
@@ -669,6 +670,8 @@ def display_switch1(status):
     if status:
         if (CLIMATE_MODES[current_climate_mode] == 'HEAT'):
             icon = 'fire'
+        elif (CLIMATE_MODES[current_climate_mode] == 'FAN'):
+            icon = 'fan'
         else:
             icon= 'snow'
     else:
@@ -1041,8 +1044,6 @@ def timer2():
                 else:
                     switch2_state = manual_state
                 logging.info("Mode is '%s / %s', setting switches to %s / %s / %s" % (MODES[current_mode], CLIMATE_MODES[current_climate_mode], switch1_state == RELAY_ON, switch2_state == RELAY_ON, switch3_state == RELAY_ON))
-                # Update switch1 status display.
-                display_switch1(switch2_state == RELAY_ON)
                 GPIO.output(SWITCH1_GPIO, switch1_state)
                 GPIO.output(SWITCH2_GPIO, switch2_state)
                 GPIO.output(SWITCH3_GPIO, switch3_state)
@@ -1063,8 +1064,6 @@ def timer2():
                     switch1_state = not switch1_state # heat
                     switch2_state = not switch2_state # fan
                     logging.info("Temperature is %.2f, '%s / %s' requires %.2f (±%.1f), setting switches to %s / %s / %s" % (gauge1_value, MODES[current_mode], CLIMATE_MODES[current_climate_mode], gauge1_required, TEMP_HYSTERESIS, switch1_state == RELAY_ON, switch2_state == RELAY_ON, switch3_state == RELAY_ON))
-                    # Update switch1 status display.
-                    display_switch1(switch2_state == RELAY_ON)
                     GPIO.output(SWITCH1_GPIO, switch1_state)
                     GPIO.output(SWITCH2_GPIO, switch2_state)
                     GPIO.output(SWITCH3_GPIO, switch3_state)
@@ -1083,15 +1082,13 @@ def timer2():
                     if (CLIMATE_MODES[current_climate_mode] == 'COOL'):
                         switch3_state = not switch3_state
                     logging.info("Temperature is %.2f, '%s / %s' requires %.2f (±%.1f), setting switch2 to %s / %s / %s" % (gauge1_value, MODES[current_mode], CLIMATE_MODES[current_climate_mode] , gauge1_required, TEMP_HYSTERESIS, switch1_state == RELAY_ON, switch2_state == RELAY_ON , switch3_state == RELAY_ON))
-                    # Update switch1 status display.
-                    display_switch1(switch2_state == RELAY_ON)
                     GPIO.output(SWITCH1_GPIO, switch1_state)
                     GPIO.output(SWITCH2_GPIO, switch2_state)
                     GPIO.output(SWITCH3_GPIO, switch3_state)
                     switch_last_change = time.time()
 
     export_status()
-
+    display_switch1(switch2_state == RELAY_ON)
     # Prepare the execution of next timer2.
     timer2_next_call += timer2_interval
     interval = timer2_next_call - time.time()
