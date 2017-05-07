@@ -129,6 +129,7 @@ SWITCH_HYSTERESIS = 30   # Hysteresis in program mode
 MANUAL_HYSTERESIS  = 20    # Hysteresis in manual (ON/OFF) mode
 BUTTON1_HYSTERESIS = 20    # Hysteresis after pressing button
 # Programmed temperature hysteresis for changing switch state.
+#  bsm - note this is in C, regardless of DEGREES_UNIT - 
 TEMP_HYSTERESIS = 0.2
 
 # Two manual modes (off, on), others are program modes.
@@ -988,6 +989,11 @@ def timer2():
     # BSM - tbf - reconcile with pre-existing mechanism, which was DEGREES_UNIT
     #  but that only affects the display...
 
+    if (use_farenheit):
+        my_temp_hysteresis = TEMP_HYSTERESIS * 9.0/5.0
+    else:
+        my_temp_hysteresis = TEMP_HYSTERESIS
+
     # set limits - 
     if ( CLIMATE_MODES[current_climate_mode] == 'COOL' or CLIMATE_MODES[current_climate_mode] == 'FAN'):
         if (use_farenheit):
@@ -1012,7 +1018,7 @@ def timer2():
     # Update temp target & mode display.
     display_mode()
 
-    logging.debug("Temperature is %s, required %s (±%.1f)" %(gauge1_value, gauge1_required, TEMP_HYSTERESIS))
+    logging.debug("Temperature is %s, required %s (±%.1f)" %(gauge1_value, gauge1_required, my_temp_hysteresis))
 
     # bsm tbf - this is the meat of the thermostat logic. may want to rename this routine timer2_3relay e.g.
     #  tbf - global current_climate_mode w/corresponding file
@@ -1054,7 +1060,7 @@ def timer2():
         #  queue off switch2 (fan) since it will be on or off in all modes
         #     and climate_mode to set temp_logic
         if (CLIMATE_MODES[current_climate_mode] == 'HEAT'):
-            if (gauge1_value >= (gauge1_required + TEMP_HYSTERESIS) and switch2_state == RELAY_ON) or (gauge1_value < (gauge1_required - TEMP_HYSTERESIS) and switch2_state == RELAY_OFF):
+            if (gauge1_value >= (gauge1_required + my_temp_hysteresis) and switch2_state == RELAY_ON) or (gauge1_value < (gauge1_required - my_temp_hysteresis) and switch2_state == RELAY_OFF):
                 hyst1 = time.time() - switch_last_change
                 hyst2 = time.time() - button1_last_press
                 logging.debug("prog. HEAT logic branch, mode = %s / %s , switches = %s / %s / %s " % ( MODES[current_mode], CLIMATE_MODES[current_climate_mode] , switch1_state == RELAY_ON, switch2_state == RELAY_ON , switch3_state == RELAY_ON))
@@ -1063,7 +1069,7 @@ def timer2():
                 else:
                     switch1_state = not switch1_state # heat
                     switch2_state = not switch2_state # fan
-                    logging.info("Temperature is %.2f, '%s / %s' requires %.2f (±%.1f), setting switches to %s / %s / %s" % (gauge1_value, MODES[current_mode], CLIMATE_MODES[current_climate_mode], gauge1_required, TEMP_HYSTERESIS, switch1_state == RELAY_ON, switch2_state == RELAY_ON, switch3_state == RELAY_ON))
+                    logging.info("Temperature is %.2f, '%s / %s' requires %.2f (±%.1f), setting switches to %s / %s / %s" % (gauge1_value, MODES[current_mode], CLIMATE_MODES[current_climate_mode], gauge1_required, my_temp_hysteresis, switch1_state == RELAY_ON, switch2_state == RELAY_ON, switch3_state == RELAY_ON))
                     GPIO.output(SWITCH1_GPIO, switch1_state)
                     GPIO.output(SWITCH2_GPIO, switch2_state)
                     GPIO.output(SWITCH3_GPIO, switch3_state)
@@ -1071,7 +1077,7 @@ def timer2():
                     logging.debug("changed switch states")
         else:
             # fan or AC, both 'cooling' modes-
-            if (gauge1_value <= (gauge1_required - TEMP_HYSTERESIS) and switch2_state == RELAY_ON) or (gauge1_value > (gauge1_required + TEMP_HYSTERESIS) and switch2_state == RELAY_OFF):
+            if (gauge1_value <= (gauge1_required - my_temp_hysteresis) and switch2_state == RELAY_ON) or (gauge1_value > (gauge1_required + my_temp_hysteresis) and switch2_state == RELAY_OFF):
                 hyst1 = time.time() - switch_last_change
                 hyst2 = time.time() - button1_last_press
                 logging.debug("prog. FAN/AC logic branch, mode = %s / %s , switches = %s / %s / %s " % ( MODES[current_mode], CLIMATE_MODES[current_climate_mode] , switch1_state == RELAY_ON, switch2_state == RELAY_ON , switch3_state == RELAY_ON))
@@ -1081,7 +1087,7 @@ def timer2():
                     switch2_state = not switch2_state
                     if (CLIMATE_MODES[current_climate_mode] == 'COOL'):
                         switch3_state = not switch3_state
-                    logging.info("Temperature is %.2f, '%s / %s' requires %.2f (±%.1f), setting switch2 to %s / %s / %s" % (gauge1_value, MODES[current_mode], CLIMATE_MODES[current_climate_mode] , gauge1_required, TEMP_HYSTERESIS, switch1_state == RELAY_ON, switch2_state == RELAY_ON , switch3_state == RELAY_ON))
+                    logging.info("Temperature is %.2f, '%s / %s' requires %.2f (±%.1f), setting switch2 to %s / %s / %s" % (gauge1_value, MODES[current_mode], CLIMATE_MODES[current_climate_mode] , gauge1_required, my_temp_hysteresis, switch1_state == RELAY_ON, switch2_state == RELAY_ON , switch3_state == RELAY_ON))
                     GPIO.output(SWITCH1_GPIO, switch1_state)
                     GPIO.output(SWITCH2_GPIO, switch2_state)
                     GPIO.output(SWITCH3_GPIO, switch3_state)
