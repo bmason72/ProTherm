@@ -598,6 +598,7 @@ def lcd_initialize():
 
     # Load some icons and convert to 1 bit color.
     lcd_icon['fire']    = Image.open(os.path.join(ICONS_DIR, 'fire.ppm')).convert('1')
+    lcd_icon['snow']    = Image.open(os.path.join(ICONS_DIR, 'snow.ppm')).convert('1')
     lcd_icon['blank']   = Image.open(os.path.join(ICONS_DIR, 'blank.ppm')).convert('1')
     lcd_icon['ethlink'] = Image.open(os.path.join(ICONS_DIR, 'ethlink.ppm')).convert('1')
     for n in (0, 25, 50, 75, 100):
@@ -640,7 +641,7 @@ def display_sys():
 #-------------------------------------------------------------------------
 def display_temperature():
     global lcd_disp, lcd_draw, lcd_image, lcd_font, lcd_icon, lcd_sema
-    global gauge1_value
+    global gauge1_value,DEGREES_UNIT
 
     # Range from -55.0 to 125.0 Celsius.
     if isinstance(gauge1_value, int) or isinstance(gauge1_value, float):
@@ -666,7 +667,10 @@ def display_switch1(status):
     global lcd_disp, lcd_draw, lcd_image, lcd_font, lcd_icon, lcd_sema
 
     if status:
-        icon = 'fire'
+        if (CLIMATE_MODES[current_climate_mode] == 'HEAT'):
+            icon = 'fire'
+        else:
+            icon= 'snow'
     else:
         icon = 'blank'
     lcd_image.paste(lcd_icon[icon], (LCD.LCDWIDTH - 32, LCD.LCDHEIGHT - 16))
@@ -783,12 +787,16 @@ def display_network():
 #-------------------------------------------------------------------------
 def display_mode():
     global lcd_disp, lcd_draw, lcd_image, lcd_font, lcd_icon, lcd_sema
-    global gauge1_required, current_mode
+    global gauge1_required, current_mode,DEGREES_UNIT,current_climate_mode
 
     if current_mode in MANUAL_MODES:
         label = MODES[current_mode]
     else:
-        label = u"%s => %.1f °%s" % (MODES[current_mode], gauge1_required, DEGREES_UNIT)
+        if (CLIMATE_MODES[current_climate_mode] == 'HEAT'):
+            mode_sym = '>'
+        else:
+            mode_sym = '<'        
+        label = u"%s: %s %.1f °%s" % (MODES[current_mode], mode_sym, gauge1_required, DEGREES_UNIT)
 
     lcd_draw.rectangle((0, 15, 83, 21), outline=255, fill=255)
     lcd_draw.text((0, 11), label, font=lcd_font['bcnd8'])
@@ -910,7 +918,7 @@ def timer1():
     global timer1_next_call, timer1_thread
 
     timer1_interval = 1
-    logging.debug("Executing timer1()")
+    #logging.debug("Executing timer1()")
     # Update clock display.
     display_clock()
     # Prepare the execution of next timer1.

@@ -14,6 +14,9 @@ needed to make by hand -> /usr/local/lib/protherm/
 
 /usr/local/lib/protherm/current_mode -> contains one integer {0,1,2..}
 
+
+/dev/shm/protherm/stats 
+
 /usr/local/lib/protherm/PROGRAM_NAME.txt -> list of thermostat
    programes go here. PROGRAM_NAMEs must match the list of modes
    hard-wired in the protherm code ("MODES = {0: ...")
@@ -24,5 +27,17 @@ needed to make by hand -> /usr/local/lib/protherm/
 
 /var/cache/protherm-tbot
 /var/run/protherm.pid
-/run/shm/protherm
+/run/shm/protherm -> alias of /dev/shm or v.v.
 
+-=-=-=-=-
+
+trouble with NTP
+1) change pool servers in /etc/ntp.conf
+2) ntpd is still not synching up properly at boot. to do it manually do this
+sudo /etc/init.d/ntp restart
+
+changing wireless networks
+sudo nano /etc/wpa_supplicant/wpa_supplicant.conf
+
+to check: ntpstat 
+  (needed to be installed: sudo apt-get install ntpstat)
