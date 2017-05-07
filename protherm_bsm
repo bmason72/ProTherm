@@ -953,7 +953,7 @@ def timer2():
     display_network()
     # Update temperature display.
     gauge1_value = gauge1_read()
-    if (gauge1_required > 39.0)
+    if (gauge1_required > 39.0):
         gauge1_value = gauge1_value*9.0/5.0+32.
         use_farenheit = True
         DEGREES_UNIT = 'F'
@@ -983,20 +983,20 @@ def timer2():
         if (use_farenheit):
             if (gauge1_required < 60):
                 gauge1_required = 60.0
-                logging.warning("Required temp. too low for cooling mode, set to ",gauge1_required," F")
+                logging.warning("Required temp. too low for cooling mode, set to %s F" % (gauge1_required))
         else:
             if (gauge1_required < 15.6):
                 gauge1_required = 15.6
-                logging.warning("Required temp. too low for cooling mode, set to ",gauge1_required," C")
+                logging.warning("Required temp. too low for cooling mode, set to %s C " % (gauge1_required))
     if ( CLIMATE_MODES[current_climate_mode] == 'HEAT'):
         if (use_farenheit):
             if (gauge1_required > 80):
                 gauge1_required = 80.0
-                logging.warning("Required temp. too high for heating mode, set to ",gauge1_required," F")                
-        else:
+                logging.warning("Required temp. too high for heating mode, set to %s F " % (gauge1_required))                
+        else: 
             if (gauge1_required > 26.7):
                 gauge1_required = 26.7
-                logging.warning("Required temp. too high for heating mode, set to ",gauge1_required," C")                
+                logging.warning("Required temp. too high for heating mode, set to %s C " % (gauge1_required))                
 
     display_mode()
 
