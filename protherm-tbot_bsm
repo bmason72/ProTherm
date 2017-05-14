@@ -187,12 +187,12 @@ def read_stats():
             stats['current_climate_mode'] = d[6]
             if d[7].isdigit(): stats['temp'] = int(d[7]) / 1000.0
             if d[8].isdigit(): stats['temp_required'] = int(d[8]) / 1000.0
-            if d[9] == "1": stats['switch1'] = True
-            elif d[9] == "0": stats['switch1'] = False
-            if d[10] == "1": stats['switch2'] = True
-            elif d[10] == "0": stats['switch2'] = False
-            if d[11] == "1": stats['switch3'] = True
-            elif d[11] == "0": stats['switch3'] = False
+            if d[9] == "True": stats['switch1'] = True
+            elif d[9] == "False": stats['switch1'] = False
+            if d[10] == "True": stats['switch2'] = True
+            elif d[10] == "False": stats['switch2'] = False
+            if d[11] == "True": stats['switch3'] = True
+            elif d[11] == "False": stats['switch3'] = False
         else:
             logging.error(u"Invalid STATS response: \"%s\", stats = %s" % (d, stats))
     return stats
@@ -218,26 +218,51 @@ def temp_message():
     if stats['timestamp'] != None:
         stats_time = time.strftime("%H:%M", time.localtime(stats['timestamp']))
     else:
-        stats_time = u"(ora ignota!)"
+        #stats_time = u"(ora ignota!)"
+        stats_time = u"(Time not known!)"
     # Temperatura e programma.
     if stats['temp'] != None and stats['current_mode'] != None and stats['temp_required'] != None:
-        msg = u'Alle %s la temperatura della stanza è %.2f °C, il programma scelto "%s" prevede una temperatura di %.2f °C.' % (stats_time, stats['temp'], stats['current_mode'], stats['temp_required'])
+        #msg = u'Alle %s la temperatura della stanza è %.2f °C, il programma scelto "%s" prevede una temperatura di %.2f °C.' % (stats_time, stats['temp'], stats['current_mode'], stats['temp_required'])
+        msg = u'At %s the temperature is %.2f °C, the program  "%s" sets a target temperature of %.2f °C.' % (stats_time, stats['temp'], stats['current_mode'], stats['temp_required'])
     elif stats['temp'] != None and stats['current_mode'] != None:
-        msg = u'Alle %s la temperatura della stanza è %.2f °C, il programma scelto è "%s".' % (stats_time, stats['temp'], stats['current_mode'])
+        #msg = u'Alle %s la temperatura della stanza è %.2f °C, il programma scelto è "%s".' % (stats_time, stats['temp'], stats['current_mode'])
+        msg = u'At %s the temperature is è %.2f °C, the current mode is: "%s".' % (stats_time, stats['temp'], stats['current_mode'])
     elif stats['temp'] != None:
-        msg = u'Alle %s la temperatura della stanza è %.2f °C, il programma scelto è ignoto.' % (stats_time, stats['temp'])
+        #msg = u'Alle %s la temperatura della stanza è %.2f °C, il programma scelto è ignoto.' % (stats_time, stats['temp'])
+        msg = u'At %s the temperature is %.2f °C, the selected program is unknown.' % (stats_time, stats['temp'])
     else:
-        msg = u'Alle %s temperatura non rilevata e programma scelto sconosciuto.' % (stats_time)
+        #msg = u'Alle %s temperatura non rilevata e programma scelto sconosciuto.' % (stats_time)
+        msg = u'At %s neither the temperature nor the program is known.' % (stats_time)
     # Bruciatore.
     if stats['switch1'] == True:
-        msg += u" Il bruciatore è acceso."
+        #msg += u" Il bruciatore è acceso."
+        msg += u"Heat is on."
     elif stats['switch1'] == False:
-        msg += u" Il bruciatore è spento."
+        #msg += u" Il bruciatore è spento."
+        msg += u"Heat is off."
     else:
-        msg += u" Stato del bruciatore sconosciuto."
+        #msg += u" Stato del bruciatore sconosciuto."
+        msg += u"Heat state unknown."
+
+    if stats['switch2'] == True:
+        msg += u"Fan is on."
+    elif stats['switch2'] == False:
+        msg += u"Fan is off."
+    else:
+        msg += u"Fan state unknown."
+
+    if stats['switch3'] == True:
+        msg += u"A/C is on."
+    elif stats['switch3'] == False:
+        msg += u"A/C is off."
+    else:
+        msg += u"A/C state unknown."
+
+
     # NTP status.
     if stats['time_ntp_status'] != "NTP_OK":
-        msg += u" L'ora non è sincronizzata con NTP!"
+        #msg += u" L'ora non è sincronizzata con NTP!"
+        msg += u" NTP synchronization of time has failed."
     return msg
 
 #-------------------------------------------------------------------------
@@ -275,21 +300,35 @@ def tmsg_handle(msg):
     # bsm - tbf - italian!
 
     if command == '/start':
-        bot.sendMessage(chat_id, u"Con questo bot si può comandare il termostato programmabile fatto con il Raspberry-Pi. I comandi principali sono /temp, /lcd e /graph\n\nVedi http://www.rigacci.org/wiki/doku.php/doc/appunti/hardware/raspberrypi_thermostat")
-        bot.sendMessage(chat_id, u"Al posto della tastiera puoi usare i pulsanti qua sotto:", reply_markup=custom_keyboard)
+        #bot.sendMessage(chat_id, u"Con questo bot si può comandare il termostato programmabile fatto con il Raspberry-Pi. I comandi principali sono /temp, /lcd e /graph\n\nVedi http://www.rigacci.org/wiki/doku.php/doc/appunti/hardware/raspberrypi_thermostat")
+        bot.sendMessage(chat_id, u"With this both you can control the raspberry pi thermostat. The main commands are: /temp, /lcd and /graph\n\nVedi http://www.rigacci.org/wiki/doku.php/doc/appunti/hardware/raspberrypi_thermostat")
+        #bot.sendMessage(chat_id, u"Al posto della tastiera puoi usare i pulsanti qua sotto:", reply_markup=custom_keyboard)
+        bot.sendMessage(chat_id, u"Use the buttons below to send commands, or select regular keyboard:", reply_markup=custom_keyboard)
+
 
     elif command == '/help':
+        #help_msg = """I comandi disponibili sono:
+#/temp mostra la temperatura attuale
+#/lcd mostra lo schermo LCD
+#/graph grafico della temperatura
+#/set imposta il programma
+#/heat
+#/cool
+#/fan 
+#/view vedi i programmi disponibili
+#/who chi è in linea con il bot
+#/help mostra questo messaggio"""
         help_msg = """I comandi disponibili sono:
-/temp mostra la temperatura attuale
-/lcd mostra lo schermo LCD
-/graph grafico della temperatura
-/set imposta il programma
+/temp show the current temperature
+/lcd show simulated LCD display :)
+/graph plot temperature & setpoint vs time
+/set set program
 /heat
 /cool
 /fan 
-/view vedi i programmi disponibili
-/who chi è in linea con il bot
-/help mostra questo messaggio"""
+/view view available programs
+/who show who is online with bot
+/help show this message"""
         bot.sendMessage(chat_id, help_msg, reply_markup=custom_keyboard)
 
     elif command == '/lcd':
@@ -302,17 +341,20 @@ def tmsg_handle(msg):
 
     elif command == '/temp':
         try: msg = temp_message()
-        except: msg = u'Errore durante la lettura dello stato del termostato.'
+        except: msg = u'Error reading thermostat status'.
+        #except: msg = u'Errore durante la lettura dello stato del termostato.'
         finally: bot.sendMessage(chat_id, msg, reply_markup=custom_keyboard)
 
     elif command == '/who':
         if len(active_chats) < 1:
-            msg = u"Nessuno in chat? Possibile? E tu cosa sei?"
+            #msg = u"Nessuno in chat? Possibile? E tu cosa sei?"
+            msg = u"No one in chat - who are you?"
         else:
             users = []
             for chat in active_chats.values():
                 users.append(display_name(chat))
-            msg = u"Attualmente sto chattando con %s." % (", ".join(users))
+            #msg = u"Attualmente sto chattando con %s." % (", ".join(users))
+            msg = u"Currently chatting with: %s." % (", ".join(users))
         bot.sendMessage(chat_id, msg, reply_markup=custom_keyboard)
 
     elif command == "/view":
@@ -320,7 +362,8 @@ def tmsg_handle(msg):
         keyboard = make_custom_keyboard("/view", progs)
         keyboard.append(['/help'])
         progs_keyboard = { 'keyboard': keyboard, 'resize_keyboard': True}
-        msg = u"Scegli il programma da vedere tra quelli disponibili: %s." % (", ".join(progs))
+        #msg = u"Scegli il programma da vedere tra quelli disponibili: %s." % (", ".join(progs))
+        msg = u"Available programs: %s." % (", ".join(progs))
         bot.sendMessage(chat_id, msg, reply_markup=progs_keyboard)
 
     elif command.startswith("/view "):
@@ -335,10 +378,12 @@ def tmsg_handle(msg):
                 subprocess.call(cmd)
                 result = bot.sendPhoto(chat_id, open(tmpf.name, "rb"))
             else:
-                msg = u"Non esiste il programma \"%s\"." % (prog_name)
+                #msg = u"Non esiste il programma \"%s\"." % (prog_name)
+                msg = u"Program does not exist -- \"%s\"." % (prog_name)
                 bot.sendMessage(chat_id, msg)
         except:
-            msg = u"Si è verificato un errore nel preparare il grafico del programma \"%s\"." % (prog_name)
+            #msg = u"Si è verificato un errore nel preparare il grafico del programma \"%s\"." % (prog_name)
+            msg = u"There was an error reading the program \"%s\"." % (prog_name)
             logging.error(msg)
             bot.sendMessage(chat_id, msg, reply_markup=custom_keyboard)
         try:
@@ -349,8 +394,10 @@ def tmsg_handle(msg):
     elif command == "/set":
         stats = read_stats()
         modes = get_response_from_socket("MODES").split(",")
-        msg  = u"Il programma attuale è \"%s\". " % (stats['current_mode'])
-        msg += u"Scegli quello da impostare tra quelli disponibili: %s." % (", ".join(modes))
+        #msg  = u"Il programma attuale è \"%s\". " % (stats['current_mode'])
+        msg  = u"The current program is \"%s\". " % (stats['current_mode'])
+        #msg += u"Scegli quello da impostare tra quelli disponibili: %s." % (", ".join(modes))
+        msg += u"Choose from the available programs: %s." % (", ".join(modes))
         keyboard = make_custom_keyboard("/set", modes)
         keyboard.append(['/help'])
         modes_keyboard = { 'keyboard': keyboard, 'resize_keyboard': True}
@@ -359,19 +406,22 @@ def tmsg_handle(msg):
     elif command.startswith("/set "):
         if not chat_id in authorized_ids:
             logging.error(u"Unauthorized '%s' command from %s, not in %s" % (command, chat_id, authorized_ids))
-            msg = u"Non sei autorizzato a cambiare programma al termostato. Chiedi all'amministratore di aggiungere il tuo ID (%d) all'elenco degli autorizzati." % (chat_id)
+            #msg = u"Non sei autorizzato a cambiare programma al termostato. Chiedi all'amministratore di aggiungere il tuo ID (%d) all'elenco degli autorizzati." % (chat_id)
+            msg = u"You are not authorized to control the thermostat. Ask the administrator to add your ID (%d) to the authorized list." % (chat_id)
             bot.sendMessage(chat_id, msg, reply_markup=custom_keyboard)
         else:
             logging.info(u"Authorized '%s' command from %s" % (command, chat_id))
             response = get_response_from_socket("SET %s" % (command[5:]))
-            msg = u"Ho inviato il comando al termostato che ha risposto: %s" %(response)
+            #msg = u"Ho inviato il comando al termostato che ha risposto: %s" %(response)
+            msg = u "I sent the command to the thermostat which responded:% s"% (response)
             bot.sendMessage(chat_id, msg, reply_markup=custom_keyboard)
 
     # bsm - add /heat , /fan, & /cool climate mode settings->
     elif command == '/heat' or command == '/cool' or command == '/fan':
         if not chat_id in authorized_ids:
             logging.error(u"Unauthorized '%s' command from %s, not in %s" % (command, chat_id, authorized_ids))
-            msg = u"Non sei autorizzato a cambiare programma al termostato. Chiedi all'amministratore di aggiungere il tuo ID (%d) all'elenco degli autorizzati." % (chat_id)
+            #msg = u"Non sei autorizzato a cambiare programma al termostato. Chiedi all'amministratore di aggiungere il tuo ID (%d) all'elenco degli autorizzati." % (chat_id)
+            msg = u "You are not authorized to change the thermostat program. Ask the administrator to add your ID (% d) to the authorized list." % (Chat_id)
             bot.sendMessage(chat_id, msg, reply_markup=custom_keyboard)
         else:
             #trans_cmd = command.upper()[1:]
@@ -383,11 +433,13 @@ def tmsg_handle(msg):
             if command == '/fan':
                 trans_cmd = 'FAN'
             response = get_response_from_socket("%s" % (trans_cmd))
-            msg = u"Ho inviato il comando al termostato che ha risposto: %s" %(response)
+            #msg = u"Ho inviato il comando al termostato che ha risposto: %s" %(response)
+            msg = u "I sent the command to the thermostat which responded:% s"% (response)
             bot.sendMessage(chat_id, msg, reply_markup=custom_keyboard)
 
     else:
-        msg = u"Non ho capito. Se non sai cosa fare prova il comando /help"
+        #msg = u"Non ho capito. Se non sai cosa fare prova il comando /help"
+        msg = u "I did not understand the command , try /help"
         bot.sendMessage(chat_id, msg, reply_markup=custom_keyboard)
 
 #-------------------------------------------------------------------------
@@ -400,9 +452,11 @@ def alive_message():
     global bot, active_chats
     me = bot.getMe()
     if 'username' in me.keys() and 'id' in me.keys():
-        msg = u"Il bot Telegram è vivo; username = *%s*, id = *%s*" % (me['username'], me['id'])
+        #msg = u"Il bot Telegram è vivo; username = *%s*, id = *%s*" % (me['username'], me['id'])
+        msg = u"The teegram bot is alive; username = *%s*, id = *%s*" % (me['username'], me['id'])
     else:
-        msg = u"Il bot Telegram è confuso: %s" % (me,)
+        #msg = u"Il bot Telegram è confuso: %s" % (me,)
+        msg = u"The telegram bot is dead or confused: %s" % (me,)
     logging.info(msg)
     broadcast_message(bot, msg, active_chats.keys(), parse_mode='Markdown')
 
@@ -471,18 +525,21 @@ def program_main():
 
         if stats['timestamp'] == None:
             # Failed to get ProTherm stats data.
-            msg = u'Impossibile leggere i dati dal termostato.'
+            #msg = u'Impossibile leggere i dati dal termostato.'
+            msg = u'Cannot read data from thermstat.'
             if read_stats_err_count < (STATS_ERR_MAX + 2):
                 read_stats_err_count += 1
         elif (int(time.time()) - stats['timestamp']) > STATS_STALE:
             # Stats data are stale.
-            msg = u'I dati forniti dal termostato non sono più aggiornati.'
+            #msg = u'I dati forniti dal termostato non sono più aggiornati.'
+            msg = u'The data provided by the thermostat are no longer up to date.'
             if read_stats_err_count < (STATS_ERR_MAX + 2):
                 read_stats_err_count += 1
         else:
             # Got stats data.
             if read_stats_err_count > STATS_ERR_MAX:
-                msg = u'La condizione di errore si è risolta.'
+                #msg = u'La condizione di errore si è risolta.'
+                msg = u'Error condidtion resolved.'
                 logging.info(msg)
                 broadcast_message(bot, msg, active_chats.keys())
             read_stats_err_count = 0
@@ -498,18 +555,22 @@ def program_main():
 
         if current_mode != 'N/A' and current_mode != stats['current_mode']:
             logging.info("Read stats = %s" % (stats))
-            msg = u'Il termostato è passato dal programma "%s" a "%s".' % (current_mode, stats['current_mode'])
+            #msg = u'Il termostato è passato dal programma "%s" a "%s".' % (current_mode, stats['current_mode'])
+            msg = u'The thermostat ran the program: "%s" a "%s".' % (current_mode, stats['current_mode'])
             logging.info(msg)
             broadcast_message(bot, msg, active_chats.keys())
         current_mode = stats['current_mode']
 
         if switch1 != 'N/A' and switch1 != stats['switch1']:
             if stats['switch1'] == True:
-                msg = u"Il bruciatore si è acceso."
+                #msg = u"Il bruciatore si è acceso."
+                msg = u"Heater is on."
             elif stats['switch1'] == False:
-                msg = u"Il bruciatore si è spento."
+                #msg = u"Il bruciatore si è spento."
+                msg = u"Heater is off."
             else:
-                msg = u"Lo stato del bruciatore è diventato sconosciuto."
+                #msg = u"Lo stato del bruciatore è diventato sconosciuto."
+                msg = u"Heater state not known."
             logging.info(msg)
             broadcast_message(bot, msg, active_chats.keys())
         switch1 = stats['switch1']

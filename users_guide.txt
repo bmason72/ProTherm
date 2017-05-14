@@ -9,6 +9,8 @@ needed to make by hand -> /usr/local/lib/protherm/
 /etc/protherm-tbot.cfg -> put your telegram bot ID & authorized user ID ('chat') *NUMBER* in this. 
     keep it secret
 
+/usr/local/share/{icons,fonts}  
+
 /var/log/protherm.log
 /var/log/protherm-tbot.log -> should changed _ to -
 

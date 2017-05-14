@@ -125,8 +125,8 @@ ENABLE_PASSWORD = "1234"
 # Other configuration.
 #-------------------------------------------------------------------------
 # Hysteresis times before changing switch state.
-SWITCH_HYSTERESIS = 30   # Hysteresis in program mode
-MANUAL_HYSTERESIS  = 20    # Hysteresis in manual (ON/OFF) mode
+SWITCH_HYSTERESIS = 300   # Hysteresis in program mode
+MANUAL_HYSTERESIS  = 30    # Hysteresis in manual (ON/OFF) mode
 BUTTON1_HYSTERESIS = 20    # Hysteresis after pressing button
 # Programmed temperature hysteresis for changing switch state.
 #  bsm - note this is in C, regardless of DEGREES_UNIT - 
@@ -144,7 +144,7 @@ CLIMATE_MODE_DEFAULT=0
 # Run as a daemon and logging options.
 BE_DAEMON = True
 # From logging module: NOTSET, DEBUG, INFO, WARNING, ERROR, CRITICAL
-LOG_LEVEL = "DEBUG"
+LOG_LEVEL = "INFO"
 # False for syslog logging, filename for file logging.
 #LOG_TO_FILE = False
 LOG_TO_FILE = "/var/log/protherm.log"

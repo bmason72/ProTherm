@@ -10,6 +10,7 @@
 3) plots
    - show temp as temp, target as target
      currently showing meas temp as target and nothing else.
+       --> is suspect the stats file is being misread, perhaps b/c i changed the contents.
    - show heat/cool/fan on
    - deal with F / C 
       consistenlty plot in one when switching the range is too large
