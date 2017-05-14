@@ -1,0 +1,29 @@
+
+1) authorized id ... is username or number?
+  using just one is a problem...?
+   -> no i edited the wrong file! one that matters is  in /etc/...
+
+2) there's no 
+   /usr/local/lib/protherm/current_mode.txt
+  to start with. can't set via web ix
+
+3) plots
+   - show temp as temp, target as target
+     currently showing meas temp as target and nothing else.
+   - show heat/cool/fan on
+   - deal with F / C 
+      consistenlty plot in one when switching the range is too large
+
+4) consistently handle F/C throughout
+
+5) add climate modes to web IX
+
+6) burner state unknown message in telegram
+
+7) 0.0 deg C shown on web page
+
+8) put english messages in protherm_tbot
+
+9) long term logging of data
+
+
