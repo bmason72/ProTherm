@@ -341,7 +341,7 @@ def tmsg_handle(msg):
 
     elif command == '/temp':
         try: msg = temp_message()
-        except: msg = u'Error reading thermostat status'.
+        except: msg = u'Error reading thermostat status.'
         #except: msg = u'Errore durante la lettura dello stato del termostato.'
         finally: bot.sendMessage(chat_id, msg, reply_markup=custom_keyboard)
 
@@ -413,7 +413,7 @@ def tmsg_handle(msg):
             logging.info(u"Authorized '%s' command from %s" % (command, chat_id))
             response = get_response_from_socket("SET %s" % (command[5:]))
             #msg = u"Ho inviato il comando al termostato che ha risposto: %s" %(response)
-            msg = u "I sent the command to the thermostat which responded:% s"% (response)
+            msg = u"I sent the command to the thermostat which responded:% s"% (response)
             bot.sendMessage(chat_id, msg, reply_markup=custom_keyboard)
 
     # bsm - add /heat , /fan, & /cool climate mode settings->
@@ -421,7 +421,7 @@ def tmsg_handle(msg):
         if not chat_id in authorized_ids:
             logging.error(u"Unauthorized '%s' command from %s, not in %s" % (command, chat_id, authorized_ids))
             #msg = u"Non sei autorizzato a cambiare programma al termostato. Chiedi all'amministratore di aggiungere il tuo ID (%d) all'elenco degli autorizzati." % (chat_id)
-            msg = u "You are not authorized to change the thermostat program. Ask the administrator to add your ID (% d) to the authorized list." % (Chat_id)
+            msg = u"You are not authorized to change the thermostat program. Ask the administrator to add your ID (% d) to the authorized list." % (Chat_id)
             bot.sendMessage(chat_id, msg, reply_markup=custom_keyboard)
         else:
             #trans_cmd = command.upper()[1:]
@@ -434,12 +434,12 @@ def tmsg_handle(msg):
                 trans_cmd = 'FAN'
             response = get_response_from_socket("%s" % (trans_cmd))
             #msg = u"Ho inviato il comando al termostato che ha risposto: %s" %(response)
-            msg = u "I sent the command to the thermostat which responded:% s"% (response)
+            msg = u"I sent the command to the thermostat which responded:% s"% (response)
             bot.sendMessage(chat_id, msg, reply_markup=custom_keyboard)
 
     else:
         #msg = u"Non ho capito. Se non sai cosa fare prova il comando /help"
-        msg = u "I did not understand the command , try /help"
+        msg = u"I did not understand the command , try /help"
         bot.sendMessage(chat_id, msg, reply_markup=custom_keyboard)
 
 #-------------------------------------------------------------------------
