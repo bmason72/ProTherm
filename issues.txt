@@ -27,4 +27,15 @@
 
 9) long term logging of data
 
+10) various system issues (13may17) 
+  -network slowness - in spite of priorities set in /etc/wpa_supplicant/wpa_supplicant.conf,
+    the device was (i believe) joining basement2 not awesome. edit out basement2, hold breath,
+    restart - it worked. putting basement2 back at low priority and hope it gets on the
+    right network at next reboot. i might be able to connect from awesome anyway since AE is
+    in bridge mode (same IP address space)
+   -ntp not synching after reboot on awesome network - i think AE was blocking UDP103.
+   however can use AE as time server - added 168.192.0.109 (AE) to /etc/ntp.conf and did
+   sudo /etc/init.d/ntp restart -- worked like a charm.
+   -(was concerned new tbot program was the problem [english translations] but it seems fine)
 
+   

@@ -556,7 +556,7 @@ def program_main():
         if current_mode != 'N/A' and current_mode != stats['current_mode']:
             logging.info("Read stats = %s" % (stats))
             #msg = u'Il termostato è passato dal programma "%s" a "%s".' % (current_mode, stats['current_mode'])
-            msg = u'The thermostat ran the program: "%s" a "%s".' % (current_mode, stats['current_mode'])
+            msg = u'The thermostat ran the program: "%s" to "%s".' % (current_mode, stats['current_mode'])
             logging.info(msg)
             broadcast_message(bot, msg, active_chats.keys())
         current_mode = stats['current_mode']
