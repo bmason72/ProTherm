@@ -986,10 +986,10 @@ def timer2():
         gauge1_required = new_program_temp_required
         old_program_temp_required = new_program_temp_required
 
-    if (gauge1_required > 39.0):
+    if (gauge1_required > 39.0 and gauge1_required != None):
         DEGREES_UNIT = 'F'
         logging.debug("Target temp > 39, using Fahrenheit.")
-    else:
+    elif gauge1_required != None:
         # when gauge1_value = None this is the default ->
         DEGREES_UNIT = 'C'
         logging.debug("Target temp < 39, using Celsius.")
@@ -998,32 +998,33 @@ def timer2():
     #  but that only affects the display...
 
     # set limits - 
-    if ( CLIMATE_MODES[current_climate_mode] == 'COOL' or CLIMATE_MODES[current_climate_mode] == 'FAN'):
-        if (DEGREES_UNIT == "F")):
-            if (gauge1_required < 60):
-                gauge1_required = 60.0
-                old_manual_temp_required = gauge1_required
-                manual_temp_required = gauge1_required
-                logging.warning("Required temp. too low for cooling mode, set to %s F" % (gauge1_required))
-        else:
-            if (gauge1_required < 15.6):
-                gauge1_required = 15.6
-                old_manual_temp_required = gauge1_required
-                manual_temp_required = gauge1_required
-                logging.warning("Required temp. too low for cooling mode, set to %s C " % (gauge1_required))
-    if ( CLIMATE_MODES[current_climate_mode] == 'HEAT'):
-        if (DEGREES_UNIT == "F")):
-            if (gauge1_required > 80):
-                gauge1_required = 80.0
-                old_manual_temp_required = gauge1_required
-                manual_temp_required = gauge1_required
-                logging.warning("Required temp. too high for heating mode, set to %s F " % (gauge1_required))                
-        else: 
-            if (gauge1_required > 26.7):
-                gauge1_required = 26.7
-                old_manual_temp_required = gauge1_required
-                manual_temp_required = gauge1_required
-                logging.warning("Required temp. too high for heating mode, set to %s C " % (gauge1_required))                
+    if (gauge1_required != None)
+        if ( CLIMATE_MODES[current_climate_mode] == 'COOL' or CLIMATE_MODES[current_climate_mode] == 'FAN'):
+            if (DEGREES_UNIT == "F")):
+                if (gauge1_required < 60):
+                    gauge1_required = 60.0
+                    old_manual_temp_required = gauge1_required
+                    manual_temp_required = gauge1_required
+                    logging.warning("Required temp. too low for cooling mode, set to %s F" % (gauge1_required))
+            else:
+                if (gauge1_required < 15.6):
+                    gauge1_required = 15.6
+                    old_manual_temp_required = gauge1_required
+                    manual_temp_required = gauge1_required
+                    logging.warning("Required temp. too low for cooling mode, set to %s C " % (gauge1_required))
+        if ( CLIMATE_MODES[current_climate_mode] == 'HEAT'):
+            if (DEGREES_UNIT == "F")):
+                if (gauge1_required > 80):
+                    gauge1_required = 80.0
+                    old_manual_temp_required = gauge1_required
+                    manual_temp_required = gauge1_required
+                    logging.warning("Required temp. too high for heating mode, set to %s F " % (gauge1_required))                
+            else: 
+                if (gauge1_required > 26.7):
+                    gauge1_required = 26.7
+                    old_manual_temp_required = gauge1_required
+                    manual_temp_required = gauge1_required
+                    logging.warning("Required temp. too high for heating mode, set to %s C " % (gauge1_required))                
 
     display_temperature()
     # Update temp target & mode display.
