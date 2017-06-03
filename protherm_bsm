@@ -109,7 +109,6 @@ WIFI_IFACE = "wlan0"
 # Link quality reported by iwconfig, usually is 100-based.
 WIFI_QUALITY_SCALE = 100
 
-
 # Switch to DEFAULT_TEMPERATURE if NTP status is "NTP_ERROR".
 NTP_IS_MANDATORY = True
 
@@ -148,7 +147,7 @@ CLIMATE_MODE_DEFAULT=0
 # Run as a daemon and logging options.
 BE_DAEMON = True
 # From logging module: NOTSET, DEBUG, INFO, WARNING, ERROR, CRITICAL
-LOG_LEVEL = "INFO"
+LOG_LEVEL = "DEBUG"
 # False for syslog logging, filename for file logging.
 #LOG_TO_FILE = False
 LOG_TO_FILE = "/var/log/protherm.log"
@@ -956,7 +955,7 @@ def timer2():
     global switch_last_change, switch1_state,switch2_state, switch3_state
     global gauge1_value, gauge1_required, current_mode,current_climate_mode
     global manual_temp_required,old_manual_temp_required,old_program_temp_required
-    global button1_last_press,old_climate_mode,DEGREES_UNIT
+    global button1_last_press,old_climate_mode,DEGREES_UNIT,TEMP_HYSTERESIS
 
     timer2_interval = 5
     logging.debug("Executing timer2()")
@@ -999,7 +998,7 @@ def timer2():
 
     # set limits - 
     if ( CLIMATE_MODES[current_climate_mode] == 'COOL' or CLIMATE_MODES[current_climate_mode] == 'FAN'):
-        if (DEGREES_UNIT == "F")):
+        if (DEGREES_UNIT == "F"):
             if (gauge1_required < 60):
                 gauge1_required = 60.0
                 old_manual_temp_required = gauge1_required
@@ -1012,7 +1011,7 @@ def timer2():
                 manual_temp_required = gauge1_required
                 logging.warning("Required temp. too low for cooling mode, set to %s C " % (gauge1_required))
     if ( CLIMATE_MODES[current_climate_mode] == 'HEAT'):
-        if (DEGREES_UNIT == "F")):
+        if (DEGREES_UNIT == "F"):
             if (gauge1_required > 80):
                 gauge1_required = 80.0
                 old_manual_temp_required = gauge1_required
@@ -1029,7 +1028,7 @@ def timer2():
     # Update temp target & mode display.
     display_mode()
 
-    logging.debug("Temperature is %s, required %s (±%.1f)" %(gauge1_value, gauge1_required, my_temp_hysteresis))
+    logging.debug("Temperature is %s, required %s (±%.1f)" %(gauge1_value, gauge1_required, TEMP_HYSTERESIS))
 
     # bsm tbf - this is the meat of the thermostat logic. may want to rename this routine timer2_3relay e.g.
     #  tbf - global current_climate_mode w/corresponding file
@@ -1073,7 +1072,7 @@ def timer2():
         #  queue off switch2 (fan) since it will be on or off in all modes
         #     and climate_mode to set temp_logic
         if (CLIMATE_MODES[current_climate_mode] == 'HEAT'):
-            if (gauge1_value >= (gauge1_required + my_temp_hysteresis) and switch2_state == RELAY_ON) or (gauge1_value < (gauge1_required - my_temp_hysteresis) and switch2_state == RELAY_OFF):
+            if (gauge1_value >= (gauge1_required + TEMP_HYSTERESIS) and switch2_state == RELAY_ON) or (gauge1_value < (gauge1_required - TEMP_HYSTERESIS) and switch2_state == RELAY_OFF):
                 hyst1 = time.time() - switch_last_change
                 hyst2 = time.time() - button1_last_press
                 logging.debug("prog. HEAT logic branch, mode = %s / %s , switches = %s / %s / %s " % ( MODES[current_mode], CLIMATE_MODES[current_climate_mode] , switch1_state == RELAY_ON, switch2_state == RELAY_ON , switch3_state == RELAY_ON))
@@ -1082,7 +1081,7 @@ def timer2():
                 else:
                     switch1_state = not switch1_state # heat
                     switch2_state = not switch2_state # fan
-                    logging.info("Temperature is %.2f, '%s / %s' requires %.2f (±%.1f), setting switches to %s / %s / %s" % (gauge1_value, MODES[current_mode], CLIMATE_MODES[current_climate_mode], gauge1_required, my_temp_hysteresis, switch1_state == RELAY_ON, switch2_state == RELAY_ON, switch3_state == RELAY_ON))
+                    logging.info("Temperature is %.2f, '%s / %s' requires %.2f (±%.1f), setting switches to %s / %s / %s" % (gauge1_value, MODES[current_mode], CLIMATE_MODES[current_climate_mode], gauge1_required, TEMP_HYSTERESIS, switch1_state == RELAY_ON, switch2_state == RELAY_ON, switch3_state == RELAY_ON))
                     GPIO.output(SWITCH1_GPIO, switch1_state)
 		            #time.sleep(0.25)
                     GPIO.output(SWITCH2_GPIO, switch2_state)
@@ -1092,7 +1091,7 @@ def timer2():
                     logging.debug("changed switch states")
         else:
             # fan or AC, both 'cooling' modes-
-            if (gauge1_value <= (gauge1_required - my_temp_hysteresis) and switch2_state == RELAY_ON) or (gauge1_value > (gauge1_required + my_temp_hysteresis) and switch2_state == RELAY_OFF):
+            if (gauge1_value <= (gauge1_required - TEMP_HYSTERESIS) and switch2_state == RELAY_ON) or (gauge1_value > (gauge1_required + TEMP_HYSTERESIS) and switch2_state == RELAY_OFF):
                 hyst1 = time.time() - switch_last_change
                 hyst2 = time.time() - button1_last_press
                 logging.debug("prog. FAN/AC logic branch, mode = %s / %s , switches = %s / %s / %s " % ( MODES[current_mode], CLIMATE_MODES[current_climate_mode] , switch1_state == RELAY_ON, switch2_state == RELAY_ON , switch3_state == RELAY_ON))
@@ -1102,7 +1101,7 @@ def timer2():
                     switch2_state = not switch2_state
                     if (CLIMATE_MODES[current_climate_mode] == 'COOL'):
                         switch3_state = not switch3_state
-                    logging.info("Temperature is %.2f, '%s / %s' requires %.2f (±%.1f), setting switch2 to %s / %s / %s" % (gauge1_value, MODES[current_mode], CLIMATE_MODES[current_climate_mode] , gauge1_required, my_temp_hysteresis, switch1_state == RELAY_ON, switch2_state == RELAY_ON , switch3_state == RELAY_ON))
+                    logging.info("Temperature is %.2f, '%s / %s' requires %.2f (±%.1f), setting switch2 to %s / %s / %s" % (gauge1_value, MODES[current_mode], CLIMATE_MODES[current_climate_mode] , gauge1_required, TEMP_HYSTERESIS, switch1_state == RELAY_ON, switch2_state == RELAY_ON , switch3_state == RELAY_ON))
                     GPIO.output(SWITCH1_GPIO, switch1_state)
 		    t       #time.sleep(0.25)
                     GPIO.output(SWITCH2_GPIO, switch2_state)
