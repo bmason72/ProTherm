@@ -16,6 +16,7 @@
       consistenlty plot in one when switching the range is too large
 
 4) consistently handle F/C throughout
+  - done, sort of.  could use further simplification
 
 5) add climate modes to web IX
 
@@ -38,4 +39,8 @@
    sudo /etc/init.d/ntp restart -- worked like a charm.
    -(was concerned new tbot program was the problem [english translations] but it seems fine)
 
+11) add explicit temp request
+ -infrastructure in but doesn't yet work. i think it needs an inter-thread communication mechanism
+    to get to timer2, similar to what's done for climate mode.
+    
    
