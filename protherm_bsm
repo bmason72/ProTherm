@@ -407,7 +407,7 @@ class socket_tcp_handler(SocketServer.StreamRequestHandler):
                 climate_mode_change(CLIMATE_MODES.keys()[CLIMATE_MODES.values().index('FAN')])
             elif (self.data[0].isdigit() and self.data[1].isdigit()):
                 manual_temp_required = float( '%c%c'%(self.data[0],self.data[1]))
-                self.request.sendall(u"OK Setting temp to %s" % str(manual_temp_required))
+                self.request.sendall(u"OK: set temp to %s" % str(manual_temp_required))
             else:
                 logging.info(msg)
                 self.request.sendall(u'Error: command not recognized\n')

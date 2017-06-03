@@ -291,7 +291,8 @@ def tmsg_handle(msg):
     if content_type != 'text':
         return
 
-    command = msg['text']
+    command = (msg['text']).lstrip()
+    
     logging.info('Got text command: "%s" from %s, chat_id %s' % (command, display_name(msg['from']), chat_id))
 
     custom_keyboard = {'keyboard': [['/temp','/lcd', '/graph', '/help'], ['/set', '/view','/heat','/cool','/fan']], 'resize_keyboard': True}
@@ -442,7 +443,10 @@ def tmsg_handle(msg):
             bot.sendMessage(chat_id,msg,reply_markup=custom_keyboard)
         else:
             logging.info(u"Authorized command %s from %s" % (command,chat_id))
-            bot.sendMessage(u"Setting temp. to %s" % command[0:2])
+            my_command = command[0:2]
+            response = get_response_from_socket(my_command)
+            msg = u"Setting temp. to %s , got response %s" % (command[0:2],response)
+            bot.sendMessage(chat_id,msg)
     else:
         #msg = u"Non ho capito. Se non sai cosa fare prova il comando /help"
         msg = u"I did not understand the command , try /help"
