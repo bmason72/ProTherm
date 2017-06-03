@@ -145,7 +145,7 @@ CLIMATE_MODES = {0: "HEAT", 1: "COOL", 2: "FAN"}
 CLIMATE_MODE_DEFAULT=0
 
 # Run as a daemon and logging options.
-BE_DAEMON = False
+BE_DAEMON = True
 # From logging module: NOTSET, DEBUG, INFO, WARNING, ERROR, CRITICAL
 LOG_LEVEL = "DEBUG"
 # False for syslog logging, filename for file logging.
@@ -408,6 +408,8 @@ class socket_tcp_handler(SocketServer.StreamRequestHandler):
             elif (self.data[0].isdigit() and self.data[1].isdigit()):
                 manual_temp_required = float( '%c%c'%(self.data[0],self.data[1]))
                 self.request.sendall(u"OK: set temp to %s" % str(manual_temp_required))
+                log_msg=u"Received manual request to set temp to %s" % str(manual_temp_required)
+                logging.info(log_msg)
             else:
                 logging.info(msg)
                 self.request.sendall(u'Error: command not recognized\n')
@@ -978,12 +980,14 @@ def timer2():
 
     #  bsm - add logic for manual temperature target-
     new_program_temp_required = programmed_temp(time.localtime()) 
-    if (manual_temp_required != old_manual_temp_required):
-        gauge1_required = manual_temp_required
-        old_manual_temp_required = manual_temp_required
     if (new_program_temp_required != old_program_temp_required):
         gauge1_required = new_program_temp_required
         old_program_temp_required = new_program_temp_required
+        logging.debug('Set new program temp')
+    if (manual_temp_required != old_manual_temp_required):
+        gauge1_required = manual_temp_required
+        old_manual_temp_required = manual_temp_required
+        logging.debug('Set new manual temp')
 
     if (gauge1_required > 39.0 and gauge1_required != None):
         DEGREES_UNIT = 'F'
