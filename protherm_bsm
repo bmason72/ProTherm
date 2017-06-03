@@ -109,14 +109,18 @@ WIFI_IFACE = "wlan0"
 # Link quality reported by iwconfig, usually is 100-based.
 WIFI_QUALITY_SCALE = 100
 
-# Default temperature if no program is defined for a given time.
-DEFAULT_TEMPERATURE = 22
 
 # Switch to DEFAULT_TEMPERATURE if NTP status is "NTP_ERROR".
 NTP_IS_MANDATORY = True
 
 # Use Celsius or Fahrenheit ("C" or "F").
-DEGREES_UNIT = "C"
+DEGREES_UNIT = "F"
+
+# Default temperature if no program is defined for a given time.
+if (DEGREES_UNIT == "F"):
+    DEFAULT_TEMPERATURE = 72
+else:
+    DEFAULT_TEMPERATURE = 22
 
 # Password for privileged operations on TCP socket.
 ENABLE_PASSWORD = "1234"
@@ -125,12 +129,12 @@ ENABLE_PASSWORD = "1234"
 # Other configuration.
 #-------------------------------------------------------------------------
 # Hysteresis times before changing switch state.
-SWITCH_HYSTERESIS = 300   # Hysteresis in program mode
+SWITCH_HYSTERESIS = 220   # Hysteresis in program mode
 MANUAL_HYSTERESIS  = 30    # Hysteresis in manual (ON/OFF) mode
 BUTTON1_HYSTERESIS = 20    # Hysteresis after pressing button
 # Programmed temperature hysteresis for changing switch state.
 #  bsm - note this is in C, regardless of DEGREES_UNIT - 
-TEMP_HYSTERESIS = 0.2
+TEMP_HYSTERESIS = 0.5
 
 # Two manual modes (off, on), others are program modes.
 MODES = {0: "MANUAL OFF", 1: "MANUAL ON", 2: "PROG1", 3: "PROG2", 4: "PROG3"}
@@ -361,8 +365,10 @@ def ntp_check_sync():
 #           - (later) - add temperature override here and TBOT
 #           - (later still) C vs F
 class socket_tcp_handler(SocketServer.StreamRequestHandler):
+    global manual_temp_required
     # Allow very few time for client to send command.
     timeout = 5
+
     def handle(self):
         try:
             self.data = self.request.recv(1024).strip()
@@ -400,6 +406,9 @@ class socket_tcp_handler(SocketServer.StreamRequestHandler):
                 logging.info(msg)
                 self.request.sendall(u"OK: Setting climate mode to FAN")
                 climate_mode_change(CLIMATE_MODES.keys()[CLIMATE_MODES.values().index('FAN')])
+            elif (self.data[0].isdigit() and self.data[1].isdigit()):
+                manual_temp_required = float( '%c%c'%(self.data[0],self.data[1]))
+                self.request.sendall(u"OK Setting temp to %s" % str(manual_temp_required))
             else:
                 logging.info(msg)
                 self.request.sendall(u'Error: command not recognized\n')
@@ -532,7 +541,7 @@ def programmed_temp(time):
 # Read gauge1 float value, return None if not available or error.
 #-------------------------------------------------------------------------
 def gauge1_read():
-    global gauge1_value
+    global gauge1_value, DEGREES_UNIT
 
     new_value = None
     try:
@@ -552,6 +561,8 @@ def gauge1_read():
                 if data[9].startswith("t="):
                     try:
                         new_value = float(data[9][2:]) / 1000
+                        if (DEGREES_UNIT == "F"):
+                            new_value = new_value*9.0/5.0+32.
                     except:
                         new_value = None
         except:
@@ -945,7 +956,7 @@ def timer2():
     global switch_last_change, switch1_state,switch2_state, switch3_state
     global gauge1_value, gauge1_required, current_mode,current_climate_mode
     global manual_temp_required,old_manual_temp_required,old_program_temp_required
-    global button1_last_press,old_climate_mode,use_farenheit,DEGREES_UNIT
+    global button1_last_press,old_climate_mode,DEGREES_UNIT
 
     timer2_interval = 5
     logging.debug("Executing timer2()")
@@ -976,42 +987,42 @@ def timer2():
         old_program_temp_required = new_program_temp_required
 
     if (gauge1_required > 39.0):
-        gauge1_value = gauge1_value*9.0/5.0+32.
-        use_farenheit = True
         DEGREES_UNIT = 'F'
         logging.debug("Target temp > 39, using Fahrenheit.")
     else:
         # when gauge1_value = None this is the default ->
-        use_farenheit = False
         DEGREES_UNIT = 'C'
         logging.debug("Target temp < 39, using Celsius.")
 
     # BSM - tbf - reconcile with pre-existing mechanism, which was DEGREES_UNIT
     #  but that only affects the display...
 
-    if (use_farenheit):
-        my_temp_hysteresis = TEMP_HYSTERESIS * 9.0/5.0
-    else:
-        my_temp_hysteresis = TEMP_HYSTERESIS
-
     # set limits - 
     if ( CLIMATE_MODES[current_climate_mode] == 'COOL' or CLIMATE_MODES[current_climate_mode] == 'FAN'):
-        if (use_farenheit):
+        if (DEGREES_UNIT == "F")):
             if (gauge1_required < 60):
                 gauge1_required = 60.0
+                old_manual_temp_required = gauge1_required
+                manual_temp_required = gauge1_required
                 logging.warning("Required temp. too low for cooling mode, set to %s F" % (gauge1_required))
         else:
             if (gauge1_required < 15.6):
                 gauge1_required = 15.6
+                old_manual_temp_required = gauge1_required
+                manual_temp_required = gauge1_required
                 logging.warning("Required temp. too low for cooling mode, set to %s C " % (gauge1_required))
     if ( CLIMATE_MODES[current_climate_mode] == 'HEAT'):
-        if (use_farenheit):
+        if (DEGREES_UNIT == "F")):
             if (gauge1_required > 80):
                 gauge1_required = 80.0
+                old_manual_temp_required = gauge1_required
+                manual_temp_required = gauge1_required
                 logging.warning("Required temp. too high for heating mode, set to %s F " % (gauge1_required))                
         else: 
             if (gauge1_required > 26.7):
                 gauge1_required = 26.7
+                old_manual_temp_required = gauge1_required
+                manual_temp_required = gauge1_required
                 logging.warning("Required temp. too high for heating mode, set to %s C " % (gauge1_required))                
 
     display_temperature()
@@ -1051,9 +1062,9 @@ def timer2():
                     switch2_state = manual_state
                 logging.info("Mode is '%s / %s', setting switches to %s / %s / %s" % (MODES[current_mode], CLIMATE_MODES[current_climate_mode], switch1_state == RELAY_ON, switch2_state == RELAY_ON, switch3_state == RELAY_ON))
                 GPIO.output(SWITCH1_GPIO, switch1_state)
-		time.sleep(0.25)
+		        #time.sleep(0.25)
                 GPIO.output(SWITCH2_GPIO, switch2_state)
-		time.sleep(0.25)
+		        #time.sleep(0.25)
                 GPIO.output(SWITCH3_GPIO, switch3_state)
                 switch_last_change = time.time()
                 logging.debug("Toggled switches!")
@@ -1073,9 +1084,9 @@ def timer2():
                     switch2_state = not switch2_state # fan
                     logging.info("Temperature is %.2f, '%s / %s' requires %.2f (±%.1f), setting switches to %s / %s / %s" % (gauge1_value, MODES[current_mode], CLIMATE_MODES[current_climate_mode], gauge1_required, my_temp_hysteresis, switch1_state == RELAY_ON, switch2_state == RELAY_ON, switch3_state == RELAY_ON))
                     GPIO.output(SWITCH1_GPIO, switch1_state)
-		    time.sleep(0.25)
+		            #time.sleep(0.25)
                     GPIO.output(SWITCH2_GPIO, switch2_state)
-		    time.sleep(0.25)
+		            # time.sleep(0.25)
                     GPIO.output(SWITCH3_GPIO, switch3_state)
                     switch_last_change = time.time()
                     logging.debug("changed switch states")
@@ -1093,9 +1104,9 @@ def timer2():
                         switch3_state = not switch3_state
                     logging.info("Temperature is %.2f, '%s / %s' requires %.2f (±%.1f), setting switch2 to %s / %s / %s" % (gauge1_value, MODES[current_mode], CLIMATE_MODES[current_climate_mode] , gauge1_required, my_temp_hysteresis, switch1_state == RELAY_ON, switch2_state == RELAY_ON , switch3_state == RELAY_ON))
                     GPIO.output(SWITCH1_GPIO, switch1_state)
-		    time.sleep(0.25)
+		    t       #time.sleep(0.25)
                     GPIO.output(SWITCH2_GPIO, switch2_state)
-		    time.sleep(0.25)
+		            #time.sleep(0.25)
                     GPIO.output(SWITCH3_GPIO, switch3_state)
                     switch_last_change = time.time()
 

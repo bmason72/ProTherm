@@ -223,13 +223,13 @@ def temp_message():
     # Temperatura e programma.
     if stats['temp'] != None and stats['current_mode'] != None and stats['temp_required'] != None:
         #msg = u'Alle %s la temperatura della stanza è %.2f °C, il programma scelto "%s" prevede una temperatura di %.2f °C.' % (stats_time, stats['temp'], stats['current_mode'], stats['temp_required'])
-        msg = u'At %s the temperature is %.2f °C, the program  "%s" sets a target temperature of %.2f °C.' % (stats_time, stats['temp'], stats['current_mode'], stats['temp_required'])
+        msg = u'At %s the temperature is %.2f °F, the program  "%s" sets a target temperature of %.2f °F.' % (stats_time, stats['temp'], stats['current_mode'], stats['temp_required'])
     elif stats['temp'] != None and stats['current_mode'] != None:
         #msg = u'Alle %s la temperatura della stanza è %.2f °C, il programma scelto è "%s".' % (stats_time, stats['temp'], stats['current_mode'])
-        msg = u'At %s the temperature is è %.2f °C, the current mode is: "%s".' % (stats_time, stats['temp'], stats['current_mode'])
+        msg = u'At %s the temperature is è %.2f °F, the current mode is: "%s".' % (stats_time, stats['temp'], stats['current_mode'])
     elif stats['temp'] != None:
         #msg = u'Alle %s la temperatura della stanza è %.2f °C, il programma scelto è ignoto.' % (stats_time, stats['temp'])
-        msg = u'At %s the temperature is %.2f °C, the selected program is unknown.' % (stats_time, stats['temp'])
+        msg = u'At %s the temperature is %.2f °F, the selected program is unknown.' % (stats_time, stats['temp'])
     else:
         #msg = u'Alle %s temperatura non rilevata e programma scelto sconosciuto.' % (stats_time)
         msg = u'At %s neither the temperature nor the program is known.' % (stats_time)
@@ -436,7 +436,13 @@ def tmsg_handle(msg):
             #msg = u"Ho inviato il comando al termostato che ha risposto: %s" %(response)
             msg = u"I sent the command to the thermostat which responded:% s"% (response)
             bot.sendMessage(chat_id, msg, reply_markup=custom_keyboard)
-
+    elif command[0].isdigit() and command[1].isdigit():
+        if not chat_id in authorized_ids:
+            logging.error(u"Unauthorized command %s from %s not in %s." % (command,chat_id,authorized_ids))
+            bot.sendMessage(chat_id,msg,reply_markup=custom_keyboard)
+        else:
+            logging.info(u"Authorized command %s from %s" % (command,chat_id))
+            bot.sendMessage(u"Setting temp. to %s" % command[0:2])
     else:
         #msg = u"Non ho capito. Se non sai cosa fare prova il comando /help"
         msg = u"I did not understand the command , try /help"
