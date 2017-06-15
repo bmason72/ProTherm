@@ -152,6 +152,8 @@ LOG_LEVEL = "DEBUG"
 #LOG_TO_FILE = False
 LOG_TO_FILE = "/var/log/protherm.log"
 
+data_filename = "/var/log/protherm_data.txt"
+
 # Listen to TCP port for commands.
 BIND_ADDR = '127.0.0.1'
 TCP_PORT = 7438
@@ -303,6 +305,7 @@ old_program_temp_required = None
 manual_temp_required = None
 old_manual_temp_required = None
 
+file_last_change = None
 switch_last_change = None
 switch1_state = None
 # bsm - new relays (fan/ac)-
@@ -952,8 +955,8 @@ def timer1():
 # Timer #2: update temp sensor (gauge1) and relay switch (switch1)
 #-------------------------------------------------------------------------
 def timer2():
-    global exit_program
-    global timer2_next_call, timer2_thread
+    global exit_program,data_filename
+    global timer2_next_call, timer2_thread, file_last_change
     global switch_last_change, switch1_state,switch2_state, switch3_state
     global gauge1_value, gauge1_required, current_mode,current_climate_mode
     global manual_temp_required,old_manual_temp_required,old_program_temp_required
@@ -961,6 +964,22 @@ def timer2():
 
     timer2_interval = 5
     logging.debug("Executing timer2()")
+
+    # log data to file - 
+    if (file_last_change == None):
+        file_last_change = time.time()
+    sec_since_file = time.time() - file_last_change
+    if (sec_since_file >= MANUAL_HYSTERESIS):
+        my_time=time.localtime()
+        file_last_change = time.time()
+        time_str = ' %d %d %d:%d:%d  ' % (a.tm_year, a.tm_yday, a.tm_hour, a.tm_min, a.tm_sec)
+        try:
+            f=open(data_filename,"a")
+            f.write("%s %.1f %.1f %d %d %d %d %d \n" % (time_str,gauge1_value,gauge1_required,switch1_state == RELAY_ON,
+                    switch2_state == RELAY_ON, switch3_state == RELAY_ON,current_climate_mode,current_mode))
+            f.close()
+        except:
+            logging.error("Error writing file '%s'" % (data_filename))
 
     if (old_climate_mode != current_climate_mode):
         logging.debug("Climate mode changed, resetting state variables & relays.")
