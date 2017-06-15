@@ -145,9 +145,9 @@ CLIMATE_MODES = {0: "HEAT", 1: "COOL", 2: "FAN"}
 CLIMATE_MODE_DEFAULT=0
 
 # Run as a daemon and logging options.
-BE_DAEMON = True
+BE_DAEMON = False
 # From logging module: NOTSET, DEBUG, INFO, WARNING, ERROR, CRITICAL
-LOG_LEVEL = "DEBUG"
+LOG_LEVEL = "INFO"
 # False for syslog logging, filename for file logging.
 #LOG_TO_FILE = False
 LOG_TO_FILE = "/var/log/protherm.log"
@@ -972,7 +972,7 @@ def timer2():
     if (sec_since_file >= MANUAL_HYSTERESIS):
         my_time=time.localtime()
         file_last_change = time.time()
-        time_str = ' %d %d %d:%d:%d  ' % (a.tm_year, a.tm_yday, a.tm_hour, a.tm_min, a.tm_sec)
+        time_str = ' %d %d %d:%d:%d  ' % (my_time.tm_year, my_time.tm_yday, my_time.tm_hour, my_time.tm_min, my_time.tm_sec)
         try:
             f=open(data_filename,"a")
             f.write("%s %.1f %.1f %d %d %d %d %d \n" % (time_str,gauge1_value,gauge1_required,switch1_state == RELAY_ON,
