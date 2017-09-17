@@ -145,7 +145,7 @@ CLIMATE_MODES = {0: "HEAT", 1: "COOL", 2: "FAN"}
 CLIMATE_MODE_DEFAULT=0
 
 # Run as a daemon and logging options.
-BE_DAEMON = False
+BE_DAEMON = True
 # From logging module: NOTSET, DEBUG, INFO, WARNING, ERROR, CRITICAL
 LOG_LEVEL = "INFO"
 # False for syslog logging, filename for file logging.

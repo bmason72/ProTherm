@@ -54,7 +54,7 @@ DEFAULTS = {
     "AUTHORIZED_IDS":  str(''),           # Chat IDs enabled to privileged commands (CSV).
     "BOT_TOKEN":       str(None),
     "BE_DAEMON":       str(True),         # Detach terminal and run in background.
-    "LOG_LEVEL":       str("DEBUG"),
+    "LOG_LEVEL":       str("INFO"),
     "LOG_TO_FILE":     str("/var/log/protherm-tbot.log"),       # bsm - set to log
     "STATS_STALE":     str(120),          # Stats data are stale if older than sec.
     "STATS_ERR_MAX":   str(5),            # Warn if reading stats fails more than times.

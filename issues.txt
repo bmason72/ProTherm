@@ -43,4 +43,8 @@
  -infrastructure in but doesn't yet work. i think it needs an inter-thread communication mechanism
     to get to timer2, similar to what's done for climate mode.
     
+12) add winter_away program (may require increasing number of programs)
+    rename programs sensibly
+
+13) make program file parsing more robust. e.g., allow 9:00 not just 09:00
    
