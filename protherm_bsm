@@ -132,11 +132,11 @@ SWITCH_HYSTERESIS = 20   # Hysteresis in program mode
 MANUAL_HYSTERESIS  = 30    # Hysteresis in manual (ON/OFF) mode
 BUTTON1_HYSTERESIS = 20    # Hysteresis after pressing button
 # Programmed temperature hysteresis for changing switch state.
-#  bsm - note this is in C, regardless of DEGREES_UNIT - 
+#  bsm - note this is in DEGREES_UNIT - 
 TEMP_HYSTERESIS = 0.5
 
 # Two manual modes (off, on), others are program modes.
-MODES = {0: "MANUAL OFF", 1: "MANUAL ON", 2: "PROG1", 3: "PROG2", 4: "PROG3"}
+MODES = {0: "MANUAL OFF", 1: "MANUAL ON", 2: "SUMR", 3: "SAWY", 4: "WNTR", 5: "WAWY"}
 MANUAL_MODES = [0, 1]
 MODE_MANUAL_OFF = 0
 MODE_DEFAULT = 2
