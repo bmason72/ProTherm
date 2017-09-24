@@ -1,5 +1,6 @@
 # bsm - nominally an away cooling program - 
 # =========== Monday
+0 00:00 60.10
 0 12:00 66.00
 0 17:00 60.10
 # =========== Tuesday

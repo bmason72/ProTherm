@@ -1,5 +1,6 @@
 # bsm - nominally a cooling program - 
 # =========== Monday
+0 00:00 70.00
 0 01:00 68.60
 0 05:00 76.00
 0 16:45 75.00
