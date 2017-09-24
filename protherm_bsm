@@ -147,7 +147,7 @@ CLIMATE_MODE_DEFAULT=0
 # Run as a daemon and logging options.
 BE_DAEMON = True
 # From logging module: NOTSET, DEBUG, INFO, WARNING, ERROR, CRITICAL
-LOG_LEVEL = "INFO"
+LOG_LEVEL = "DEBUG"
 # False for syslog logging, filename for file logging.
 #LOG_TO_FILE = False
 LOG_TO_FILE = "/var/log/protherm.log"
@@ -409,13 +409,15 @@ class socket_tcp_handler(SocketServer.StreamRequestHandler):
                 self.request.sendall(u"OK: Setting climate mode to FAN")
                 climate_mode_change(CLIMATE_MODES.keys()[CLIMATE_MODES.values().index('FAN')])
             elif (self.data[0].isdigit() and self.data[1].isdigit()):
-                manual_temp_required = float( '%c%c'%(self.data[0],self.data[1]))
-                self.request.sendall(u"OK: set temp to %s" % str(manual_temp_required))
-                log_msg=u"Received manual request to set temp to %s" % str(manual_temp_required)
+                new_manual_temp_required = float( '%c%c'%(self.data[0],self.data[1]))
+                self.request.sendall(u"OK: set temp to %s" % str(new_manual_temp_required))
+                log_msg=u"Received manual request to set temp to %s" % str(new_manual_temp_required)
                 logging.info(log_msg)
+                manual_temp_change(new_manual_temp_required)
             else:
                 logging.info(msg)
                 self.request.sendall(u'Error: command not recognized\n')
+            time.sleep(0)
         except (socket.timeout):
             logging.error(u"Socket timeout")
         except:
@@ -877,6 +879,16 @@ def mode_change(mode):
     export_status()
     display_mode()
 
+def manual_temp_change(temp):
+    global manual_temp_required,old_manual_temp_required
+
+    logging.info("Overriding temp with manually requested temperature: %s" % temp)
+
+    manual_temp_required = temp
+
+    export_status()
+    display_mode()
+
 #-------------------------------------------------------------------------
 # bsm - Set new climate mode (index of CLIMATE_MODES dictionary).
 #-------------------------------------------------------------------------
@@ -964,6 +976,7 @@ def timer2():
 
     timer2_interval = 5
     logging.debug("Executing timer2()")
+    logging.info("Manual temp: %s , %s" % (manual_temp_required,old_manual_temp_required))
 
     # log data to file - 
     if (file_last_change == None):
@@ -1138,6 +1151,7 @@ def timer2():
     # Prepare the execution of next timer2.
     timer2_next_call += timer2_interval
     interval = timer2_next_call - time.time()
+    time.sleep(0)
     if interval <= 0:
         logging.error("Function timer2() too slow or timer2_interval too short")
         interval = timer2_interval
