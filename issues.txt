@@ -1,3 +1,10 @@
+new (oct 2017)
+
+1) doesn't log temps when mode = manual_off
+
+-=-=-=-=-
+
+pre oct 2017
 
 1) authorized id ... is username or number?
   using just one is a problem...?

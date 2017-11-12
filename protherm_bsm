@@ -129,11 +129,14 @@ ENABLE_PASSWORD = "1234"
 #-------------------------------------------------------------------------
 # Hysteresis times before changing switch state.
 SWITCH_HYSTERESIS = 20   # Hysteresis in program mode
+# bsm - 7nov17 - add heat cycle time
+HEAT_CYCLE_TIME = 600   # time in sec. between heat on
 MANUAL_HYSTERESIS  = 30    # Hysteresis in manual (ON/OFF) mode
 BUTTON1_HYSTERESIS = 20    # Hysteresis after pressing button
 # Programmed temperature hysteresis for changing switch state.
 #  bsm - note this is in DEGREES_UNIT - 
-TEMP_HYSTERESIS = 0.5
+#  for summer was 0.5. 
+TEMP_HYSTERESIS = 0.75
 
 # Two manual modes (off, on), others are program modes.
 MODES = {0: "MANUAL OFF", 1: "MANUAL ON", 2: "SUMR", 3: "SAWY", 4: "WNTR", 5: "WAWY"}
@@ -969,7 +972,7 @@ def timer1():
 def timer2():
     global exit_program,data_filename
     global timer2_next_call, timer2_thread, file_last_change
-    global switch_last_change, switch1_state,switch2_state, switch3_state
+    global switch_last_change, switch1_state,switch2_state, switch3_state,heat_last_on
     global gauge1_value, gauge1_required, current_mode,current_climate_mode
     global manual_temp_required,old_manual_temp_required,old_program_temp_required
     global button1_last_press,old_climate_mode,DEGREES_UNIT,TEMP_HYSTERESIS
@@ -1001,6 +1004,7 @@ def timer2():
         switch3_state=RELAY_OFF
         GPIO.output((SWITCH1_GPIO,SWITCH2_GPIO,SWITCH3_GPIO),RELAY_OFF)
         switch_last_change=time.time()
+        heat_last_on=time.time() - HEAT_CYCLE_TIME
         old_climate_mode = current_climate_mode
 
     # Update system information data display.
@@ -1015,6 +1019,8 @@ def timer2():
     if (new_program_temp_required != old_program_temp_required):
         gauge1_required = new_program_temp_required
         old_program_temp_required = new_program_temp_required
+        # if the target temp changed, reset the furnace timer-
+        heat_last_on = time.time() - HEAT_CYCLE_TIME 
         logging.debug('Set new program temp')
     if (manual_temp_required != old_manual_temp_required):
         gauge1_required = manual_temp_required
@@ -1112,12 +1118,15 @@ def timer2():
             if (gauge1_value >= (gauge1_required + TEMP_HYSTERESIS) and switch2_state == RELAY_ON) or (gauge1_value < (gauge1_required - TEMP_HYSTERESIS) and switch2_state == RELAY_OFF):
                 hyst1 = time.time() - switch_last_change
                 hyst2 = time.time() - button1_last_press
+                hyst3 = time.time() - heat_last_on
                 logging.debug("prog. HEAT logic branch, mode = %s / %s , switches = %s / %s / %s " % ( MODES[current_mode], CLIMATE_MODES[current_climate_mode] , switch1_state == RELAY_ON, switch2_state == RELAY_ON , switch3_state == RELAY_ON))
-                if (hyst1 < SWITCH_HYSTERESIS or hyst2 < BUTTON1_HYSTERESIS):
+                if (hyst1 < SWITCH_HYSTERESIS or hyst2 < BUTTON1_HYSTERESIS  or (switch1_state == RELAY_OFF and hyst3 < HEAT_CYCLE_TIME)):
                     logging.debug("Waiting hysteresis time before toggling switch1")
                 else:
                     switch1_state = not switch1_state # heat
                     switch2_state = not switch2_state # fan
+                    if (switch1_state == RELAY_ON):
+                      heat_last_on = time.time()
                     logging.info("Temperature is %.2f, '%s / %s' requires %.2f (±%.1f), setting switches to %s / %s / %s" % (gauge1_value, MODES[current_mode], CLIMATE_MODES[current_climate_mode], gauge1_required, TEMP_HYSTERESIS, switch1_state == RELAY_ON, switch2_state == RELAY_ON, switch3_state == RELAY_ON))
                     GPIO.output(SWITCH1_GPIO, switch1_state)
 		    #time.sleep(0.25)
