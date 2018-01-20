@@ -528,6 +528,8 @@ def program_main():
     switch1 = 'N/A'
     read_stats_err_count = 0
     sent_imalive = False
+    heater_msg_counter = 0
+
     while not exit_program:
 
         stats = read_stats()
@@ -581,8 +583,11 @@ def program_main():
             else:
                 #msg = u"Lo stato del bruciatore è diventato sconosciuto."
                 msg = u"Heater state not known."
-            logging.info(msg)
-            broadcast_message(bot, msg, active_chats.keys())
+            # only emit messages every 5th time- preserves on/off synchrony in msging-
+	    if not (heater_msg_counter % 5):
+                logging.info(msg)
+                broadcast_message(bot, msg, active_chats.keys())
+            heater_msg_counter += 1
         switch1 = stats['switch1']
 
         # Send "I'm alive" message.
