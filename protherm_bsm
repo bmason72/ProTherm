@@ -52,6 +52,13 @@
 # Buttons:
 # http://sourceforge.net/p/raspberry-gpio-python/wiki/Inputs/
 
+#
+# 20jan18 bsm - add HOLD mode
+#             - fix bug in manual temp (where it is separately tracked and never resets 
+#                so sometimes doesn't 'take' an update if it had the old manual temp setting)
+#
+
+
 #import ConfigParser, daemon, daemon.pidlockfile, signal, threading
 # bsm  update to lockfile.pidlockfile
 import ConfigParser, signal, threading,daemon,lockfile.pidlockfile
@@ -139,8 +146,9 @@ BUTTON1_HYSTERESIS = 20    # Hysteresis after pressing button
 TEMP_HYSTERESIS = 0.75
 
 # Two manual modes (off, on), others are program modes.
-MODES = {0: "MANUAL OFF", 1: "MANUAL ON", 2: "SUMR", 3: "SAWY", 4: "WNTR", 5: "WAWY"}
+MODES = {0: "MANUAL OFF", 1: "MANUAL ON", 2: "SUMR", 3: "SAWY", 4: "WNTR", 5: "WAWY", 6: "HOLD"}
 MANUAL_MODES = [0, 1]
+HOLD_MODE = 6
 MODE_MANUAL_OFF = 0
 MODE_DEFAULT = 2
 # bsm - add heat/cool/fan option
@@ -150,7 +158,7 @@ CLIMATE_MODE_DEFAULT=0
 # Run as a daemon and logging options.
 BE_DAEMON = True
 # From logging module: NOTSET, DEBUG, INFO, WARNING, ERROR, CRITICAL
-LOG_LEVEL = "DEBUG"
+LOG_LEVEL = "INFO"
 # False for syslog logging, filename for file logging.
 #LOG_TO_FILE = False
 LOG_TO_FILE = "/var/log/protherm.log"
@@ -529,10 +537,12 @@ def load_all_programs():
 # Search programs from programmed temperature.
 #-------------------------------------------------------------------------
 def programmed_temp(time):
-    global programs, current_mode, time_ntp_status
+    global programs, current_mode, time_ntp_status, manual_temp_required
 
     if current_mode in MANUAL_MODES:
         return None
+    elif current_mode == HOLD_MODE:
+        return manual_temp_required
     elif NTP_IS_MANDATORY and time_ntp_status == "NTP_ERROR":
         return DEFAULT_TEMPERATURE
     else:
@@ -1019,6 +1029,9 @@ def timer2():
     if (new_program_temp_required != old_program_temp_required):
         gauge1_required = new_program_temp_required
         old_program_temp_required = new_program_temp_required
+        # also reset the manual temps when the programmed temp changes
+        old_manual_temp_required = new_program_temp_required 
+        manual_temp_required = old_manual_temp_required
         # if the target temp changed, reset the furnace timer-
         heat_last_on = time.time() - HEAT_CYCLE_TIME 
         logging.debug('Set new program temp')
